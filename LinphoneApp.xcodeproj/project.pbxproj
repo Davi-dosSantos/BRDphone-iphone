@@ -242,6 +242,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		535D94572ECDF8A300FEB5BB /* pt-BR */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "pt-BR"; path = "Localizable/pt-BR.lproj/Localizable.strings"; sourceTree = "<group>"; };
 		660AAF7B2B839271004C0FA6 /* msgNotificationService.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = msgNotificationService.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		660AAF842B8392E0004C0FA6 /* msgNotificationService.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = msgNotificationService.entitlements; sourceTree = "<group>"; };
 		660D8A702B517D260092694D /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
@@ -1178,6 +1179,7 @@
 				ru,
 				"zh-Hans",
 				sk,
+				"pt-BR",
 			);
 			mainGroup = D719ABAA2ABC67BF00B41C10;
 			packageReferences = (
@@ -1480,6 +1482,7 @@
 				D7F372C32E65C51B0008B863 /* ru */,
 				D7F372C42E65C51E0008B863 /* zh-Hans */,
 				D71C266F2E819A0D001A7F92 /* sk */,
+				535D94572ECDF8A300FEB5BB /* pt-BR */,
 			);
 			name = Localizable.strings;
 			sourceTree = "<group>";
