@@ -101,7 +101,7 @@
 			<string>com.brdsoft.brdphone</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>org.linphone</string>
+				<string>com.brdsoft.brdphone</string>
 			</array>
 		</dict>
 		<dict>
@@ -115,6 +115,11 @@
 			</array>
 		</dict>
 	</array>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
 	<key>NSSupportsSuddenTermination</key>
 	<false/>
 	<key>UIAppFonts</key>

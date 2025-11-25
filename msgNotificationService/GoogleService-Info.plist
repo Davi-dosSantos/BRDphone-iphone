@@ -2,22 +2,18 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>CLIENT_ID</key>
-	<string></string>
-	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.221368768663-b8e48em01it3pt04vp1k0ddrgrcrju65</string>
 	<key>API_KEY</key>
-	<string></string>
+	<string>AIzaSyDuoa72csMEUDKHSUxTdH_p_wAwisccrNw</string>
 	<key>GCM_SENDER_ID</key>
-	<string>221368768663</string>
+	<string>1022372695421</string>
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.brdsoft.brdphone.msgNotificationService</string>
+	<string>com.brdsoft.brdphone</string>
 	<key>PROJECT_ID</key>
-	<string>linphone-iphone</string>
+	<string>linphone-79371</string>
 	<key>STORAGE_BUCKET</key>
-	<string>linphone-iphone.firebasestorage.app</string>
+	<string>linphone-79371.firebasestorage.app</string>
 	<key>IS_ADS_ENABLED</key>
 	<false/>
 	<key>IS_ANALYTICS_ENABLED</key>
@@ -29,8 +25,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true/>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:221368768663:ios:ccf2c32eadcd3a0f9431d2</string>
-	<key>DATABASE_URL</key>
-	<string></string>
+	<string>1:1022372695421:ios:806a542ca6ee984b771014</string>
 </dict>
 </plist>

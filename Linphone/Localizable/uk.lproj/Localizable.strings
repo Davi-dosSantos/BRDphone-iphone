@@ -272,7 +272,7 @@
 "settings_meetings_title" = "Наради";
 "settings_network_allow_ipv6" = "Дозволити IPv6";
 "settings_network_title" = "Мережа";
-"[linphone.org/contact](https://linphone.org/contact)" = "[linphone.org/contact](https://linphone.org/contact)";
+"[linphone.org/contact](https://brdsoft.com.br/contact)" = "[linphone.org/contact](https://brdsoft.com.br/contact)";
 "*" = "*";
 "**%@**" = "**%@**";
 "#" = "#";
@@ -411,8 +411,8 @@
 "settings_calls_calibrate_echo_canceller_done" = "%@ мс";
 "welcome_page_1_message" = "**Захищений**, **з відкритим вихідним кодом** та **французький** застосунок для спілкування.";
 "help_dialog_update_available_message" = "Доступна нова версія %@. Бажаєте оновити?";
-"website_user_guide_url" = "https://linphone.org/en/docs/";
-"website_privacy_policy_url" = "https://linphone.org/en/privacy-policy";
+"website_user_guide_url" = "https://brdsoft.com.br/en/docs/";
+"website_privacy_policy_url" = "https://brdsoft.com.br/en/privacy-policy";
 "welcome_page_3_message" = "**Безкоштовний** застосунок з відкритим кодом з **2001 року**.";
 "welcome_page_subtitle" = "в %@";
 "Chiffrement de bout en bout de tous vos échanges, grâce au mode default vos communications sont à l’abri des regards." = "Наскрізне шифрування всіх ваших повідомлень, завдяки режиму за замовчуванням ваші повідомлення захищені від сторонніх очей.";
@@ -423,7 +423,7 @@
 "contacts_list_filter_popup_see_linphone_only" = "Переглянути контакти %@";
 "conversation_composing_label_multiple" = "%@ скомпоновано…";
 "conversation_composing_label_single" = "%@ скомпоновано…";
-"conversation_end_to_end_encrypted_bottom_sheet_link" = "https://linphone.org/en/features/#security";
+"conversation_end_to_end_encrypted_bottom_sheet_link" = "https://brdsoft.com.br/en/features/#security";
 "conversation_end_to_end_encrypted_event_title" = "Наскрізне шифрування розмови";
 "conversation_end_to_end_encrypted_event_subtitle" = "Повідомлення в цій розмові зашифровані за методом електронного шифрування (e2e). Розшифрувати їх може лише ваш співрозмовник.";
 "conversation_event_admin_set" = "%@ є адміном";
@@ -493,8 +493,8 @@
 "username_error" = "Помилка в імені користувача";
 "web_platform_forgotten_password_url" = "https://subscribe.linphone.org/";
 "web_platform_register_email_url" = "https://subscribe.linphone.org/register/email";
-"website_contact_url" = "https://linphone.org/contact";
-"website_download_url" = "https://linphone.org/linphone-softphone";
+"website_contact_url" = "https://brdsoft.com.br/contact";
+"website_download_url" = "https://brdsoft.com.br/linphone-softphone";
 "website_open_source_licences_usage_url" = "https://wiki.linphone.org/xwiki/wiki/public/view/Linphone/Third%20party%20components%20/";
 "website_translate_weblate_url" = "https://weblate.linphone.org/";
 "Default mode" = "Режим за замовчуванням";

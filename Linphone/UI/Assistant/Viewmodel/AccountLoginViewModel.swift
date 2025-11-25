@@ -26,7 +26,7 @@ class AccountLoginViewModel: ObservableObject {
 	
 	@Published var username: String = ""
 	@Published var passwd: String = ""
-	@Published var domain: String = "sip.linphone.org"
+	@Published var domain: String = "pabx01.brdvoz.com.br"
 	@Published var displayName: String = ""
 	@Published var transportType: String = "TLS"
 	@Published var authId: String = ""
@@ -122,6 +122,24 @@ class AccountLoginViewModel: ObservableObject {
 					accountParams.pushNotificationAllowed = true
 					accountParams.remotePushNotificationAllowed = true
 				}
+                Task{
+                    if let savedToken = UserDefaults.standard.string(forKey: "MyDeviceToken") {
+                        print("O token recuperado é: \(savedToken)")
+                        
+                        if let urlMiddleware = URL(string: "http://168.121.7.18:3000/user/upsert") {
+                            await MiddlewareServices.sendTokenToMiddleware(
+                                url: urlMiddleware,
+                                userID_Domain: String("sip:" + self.username + "@" + self.domain),
+                                token: savedToken
+                            )
+                            print("Envio do token para o Middleware finalizado com sucesso!")
+
+                        }     else {
+                            print("URL Inválida")
+                        }           } else {
+                            print("Token ainda não foi gerado.")
+                        }
+                }
 #if DEBUG
 				let pushEnvironment = ".dev"
 #else
@@ -160,7 +178,7 @@ class AccountLoginViewModel: ObservableObject {
 				core.defaultAccount = account
 				
 				DispatchQueue.main.async {
-					self.domain = "sip.linphone.org"
+					self.domain = "pabx01.brdvoz.com.br"
 					self.transportType = "TLS"
 					self.authId = ""
 					self.outboundProxy = ""

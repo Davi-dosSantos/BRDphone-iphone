@@ -189,8 +189,8 @@ class CorePreferences {
 	
 	static var themeMainColor: String {
 		get {
-			let raw = Config.get().getString(section: "ui", key: "theme_main_color", defaultString: "orange")
-			return safeString(raw, defaultValue: "orange")
+			let raw = Config.get().getString(section: "ui", key: "theme_main_color", defaultString: "brd")
+			return safeString(raw, defaultValue: "brd")
 		}
 		set {
 			Config.get().setString(section: "ui", key: "theme_main_color", value: newValue)
@@ -263,8 +263,8 @@ class CorePreferences {
 	
 	static var defaultDomain: String {
 		get {
-			let raw = Config.get().getString(section: "app", key: "default_domain", defaultString: "sip.linphone.org")
-			return safeString(raw, defaultValue: "sip.linphone.org")
+			let raw = Config.get().getString(section: "app", key: "default_domain", defaultString: "pabx01.brdvoz.com.br")
+			return safeString(raw, defaultValue: "pabx01.brdvoz.com.br")
 		}
 		set {
 			Config.get().setString(section: "app", key: "default_domain", value: newValue)

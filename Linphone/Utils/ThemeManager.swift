@@ -37,11 +37,11 @@ final class ThemeManager: ObservableObject {
 	static let shared = ThemeManager()
 	private let themeKey = "selectedTheme"
 	
-	@Published var currentTheme: Theme = ThemeManager.orange
+	@Published var currentTheme: Theme = ThemeManager.brd
 	
 	private init() {
 		let storedName = UserDefaults.standard.string(forKey: themeKey)
-		currentTheme = themes[storedName ?? ""] ?? ThemeManager.orange
+		currentTheme = themes[storedName ?? ""] ?? ThemeManager.brd
 	}
 	
 	func applyTheme(named name: String) {
@@ -61,7 +61,9 @@ final class ThemeManager: ObservableObject {
 		blue.name: blue,
 		red.name: red,
 		pink.name: pink,
-		purple.name: purple
+		purple.name: purple,
+        brd.name: brd,
+        
 	]
 	
 	static let orange = Theme(
@@ -126,6 +128,15 @@ final class ThemeManager: ObservableObject {
 		main500: Color(hex: "#800080"),
 		main700: Color(hex: "#520052")
 	)
+
+	static let brd = Theme(
+        name: "brd",
+        main100: Color(hex: "#D0DEE8"),      // Um tom bem claro (quase branco) para fundos
+        main100Alpha50: Color(hex: "#80D0DEE8"), // O mesmo tom com 50% de transparência
+        main300: Color(hex: "#5B7CA0"),      // Um tom intermediário suave
+        main500: Color(hex: "#183E65"),      // A cor oficial da BRD
+        main700: Color(hex: "#0F2942")       // Um tom mais escuro para estados "pressionados"
+    )
 }
 
 // MARK: - Color Provider (reactive bridge for SwiftUI)

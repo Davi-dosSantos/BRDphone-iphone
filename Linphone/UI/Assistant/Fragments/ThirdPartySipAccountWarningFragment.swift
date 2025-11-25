@@ -117,7 +117,7 @@ struct ThirdPartySipAccountWarningFragment: View {
 					Spacer()
 					
 					HStack {
-						Text("[linphone.org/contact](https://linphone.org/contact)")
+						Text("[linphone.org/contact](https://brdsoft.com.br/contact)")
 							.tint(Color.orangeMain500)
 							.default_text_style_orange_600(styleSize: 15)
 							.frame(height: 35)

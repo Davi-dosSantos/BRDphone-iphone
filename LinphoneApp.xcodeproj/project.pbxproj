@@ -7,8 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		53206B1E2ED5EBCE00579640 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 53206B1D2ED5EBCE00579640 /* GoogleService-Info.plist */; };
+		53206B202ED5EBE100579640 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 53206B1F2ED5EBE000579640 /* GoogleService-Info.plist */; };
 		660AAF7F2B839272004C0FA6 /* msgNotificationService.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 660AAF7B2B839271004C0FA6 /* msgNotificationService.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		660D8A712B517D260092694D /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 660D8A702B517D260092694D /* GoogleService-Info.plist */; };
 		6613A0AE2BAEB7DF008923A4 /* MeetingFragment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6613A0AD2BAEB7DF008923A4 /* MeetingFragment.swift */; };
 		6613A0B42BAEBE3F008923A4 /* MeetingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6613A0B32BAEBE3F008923A4 /* MeetingViewModel.swift */; };
 		66162A202BDFC2F900DCE913 /* AddParticipantsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66162A1F2BDFC2F900DCE913 /* AddParticipantsViewModel.swift */; };
@@ -17,7 +18,6 @@
 		662B69DB2B25DE25007118BF /* ProviderDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 662B69DA2B25DE25007118BF /* ProviderDelegate.swift */; };
 		6646A7A32BB2E224006B842A /* ScheduleMeetingFragment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6646A7A22BB2E224006B842A /* ScheduleMeetingFragment.swift */; };
 		667E5D7F2B8E430C00EBCFC4 /* linphonerc-factory in Resources */ = {isa = PBXBuildFile; fileRef = D732A90B2B0376F500DB42BA /* linphonerc-factory */; };
-		667E5D812B8E444E00EBCFC4 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 667E5D802B8E444D00EBCFC4 /* GoogleService-Info.plist */; };
 		6691CA7E2B839C2D00B2A7B8 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6691CA7D2B839C2D00B2A7B8 /* NotificationService.swift */; };
 		66C468FB2D2BE54800A836F7 /* PIPViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66C468FA2D2BE54300A836F7 /* PIPViewModel.swift */; };
 		66C491F92B24D25B00CEA16D /* ConfigExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66C491F82B24D25A00CEA16D /* ConfigExtension.swift */; };
@@ -242,10 +242,11 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		53206B1D2ED5EBCE00579640 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+		53206B1F2ED5EBE000579640 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		535D94572ECDF8A300FEB5BB /* pt-BR */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "pt-BR"; path = "Localizable/pt-BR.lproj/Localizable.strings"; sourceTree = "<group>"; };
 		660AAF7B2B839271004C0FA6 /* msgNotificationService.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = msgNotificationService.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		660AAF842B8392E0004C0FA6 /* msgNotificationService.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = msgNotificationService.entitlements; sourceTree = "<group>"; };
-		660D8A702B517D260092694D /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		6613A0AD2BAEB7DF008923A4 /* MeetingFragment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingFragment.swift; sourceTree = "<group>"; };
 		6613A0B32BAEBE3F008923A4 /* MeetingViewModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MeetingViewModel.swift; sourceTree = "<group>"; };
 		66162A1F2BDFC2F900DCE913 /* AddParticipantsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddParticipantsViewModel.swift; sourceTree = "<group>"; };
@@ -253,7 +254,6 @@
 		662B69D82B25DE18007118BF /* TelecomManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelecomManager.swift; sourceTree = "<group>"; };
 		662B69DA2B25DE25007118BF /* ProviderDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderDelegate.swift; sourceTree = "<group>"; };
 		6646A7A22BB2E224006B842A /* ScheduleMeetingFragment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleMeetingFragment.swift; sourceTree = "<group>"; };
-		667E5D802B8E444D00EBCFC4 /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		6691CA7D2B839C2D00B2A7B8 /* NotificationService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		66C468FA2D2BE54300A836F7 /* PIPViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PIPViewModel.swift; sourceTree = "<group>"; };
 		66C491F82B24D25A00CEA16D /* ConfigExtension.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ConfigExtension.swift; sourceTree = "<group>"; };
@@ -450,6 +450,7 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		53567C422ECE0D96009574CC /* BRD */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = BRD; sourceTree = "<group>"; };
 		D7458F302E0BDCF4000C957A /* linphoneExtension */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (D7458F3C2E0BDCF4000C957A /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = linphoneExtension; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
@@ -489,9 +490,9 @@
 		660AAF7C2B839272004C0FA6 /* msgNotificationService */ = {
 			isa = PBXGroup;
 			children = (
-				667E5D802B8E444D00EBCFC4 /* GoogleService-Info.plist */,
 				6691CA7D2B839C2D00B2A7B8 /* NotificationService.swift */,
 				660AAF842B8392E0004C0FA6 /* msgNotificationService.entitlements */,
+				53206B1F2ED5EBE000579640 /* GoogleService-Info.plist */,
 			);
 			path = msgNotificationService;
 			sourceTree = "<group>";
@@ -626,12 +627,13 @@
 		D719ABAA2ABC67BF00B41C10 = {
 			isa = PBXGroup;
 			children = (
-				660D8A702B517D260092694D /* GoogleService-Info.plist */,
+				53567C422ECE0D96009574CC /* BRD */,
 				D719ABB52ABC67BF00B41C10 /* Linphone */,
 				660AAF7C2B839272004C0FA6 /* msgNotificationService */,
 				D7458F302E0BDCF4000C957A /* linphoneExtension */,
 				D7DF8BE52E2104DC003A3BC7 /* Frameworks */,
 				D719ABB42ABC67BF00B41C10 /* Products */,
+				53206B1D2ED5EBCE00579640 /* GoogleService-Info.plist */,
 			);
 			sourceTree = "<group>";
 		};
@@ -1116,6 +1118,9 @@
 				660AAF7E2B839272004C0FA6 /* PBXTargetDependency */,
 				D7458F382E0BDCF4000C957A /* PBXTargetDependency */,
 			);
+			fileSystemSynchronizedGroups = (
+				53567C422ECE0D96009574CC /* BRD */,
+			);
 			name = LinphoneApp;
 			productName = Linphone;
 			productReference = D719ABB32ABC67BF00B41C10 /* LinphoneApp.app */;
@@ -1206,7 +1211,7 @@
 			files = (
 				667E5D7F2B8E430C00EBCFC4 /* linphonerc-factory in Resources */,
 				D7E394C52DAC6561005FA0DD /* Localizable.strings in Resources */,
-				667E5D812B8E444E00EBCFC4 /* GoogleService-Info.plist in Resources */,
+				53206B202ED5EBE100579640 /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1216,6 +1221,7 @@
 			files = (
 				D7D24D142AC1B4E800C6F35B /* NotoSans-Regular.ttf in Resources */,
 				D7D24D182AC1B4E800C6F35B /* NotoSans-ExtraBold.ttf in Resources */,
+				53206B1E2ED5EBCE00579640 /* GoogleService-Info.plist in Resources */,
 				D7D24D152AC1B4E800C6F35B /* NotoSans-Light.ttf in Resources */,
 				D7FC8E4A2EBA12F90080C09D /* Launch Screen.storyboard in Resources */,
 				D737AEEF2DA011F2005C1280 /* Localizable.strings in Resources */,
@@ -1228,7 +1234,6 @@
 				D732A90C2B0376F500DB42BA /* linphonerc-default in Resources */,
 				D732A90D2B0376F500DB42BA /* linphonerc-factory in Resources */,
 				D783C77C2B1089B200622CC2 /* assistant_linphone_default_values in Resources */,
-				660D8A712B517D260092694D /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

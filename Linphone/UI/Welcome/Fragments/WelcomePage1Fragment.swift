@@ -26,7 +26,7 @@ struct WelcomePage1Fragment: View {
 		VStack {
 			Spacer()
 			VStack {
-				Image("linphone")
+				Image("brdphone")
 					.renderingMode(.template)
 					.resizable()
 					.foregroundStyle(Color.orangeMain500)

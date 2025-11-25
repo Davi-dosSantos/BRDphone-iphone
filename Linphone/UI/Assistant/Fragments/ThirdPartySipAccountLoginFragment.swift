@@ -343,6 +343,7 @@ struct ThirdPartySipAccountLoginFragment: View {
 				.scaledToFill()
 				.frame(width: geometry.size.width, height: 60)
 				.clipped()
+            
 		}
 		.frame(minHeight: geometry.size.height)
 		.padding(.bottom, keyboard.currentHeight)

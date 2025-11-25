@@ -7,7 +7,7 @@
 "" = "";
 ": %@" = ": %@";
 "[https://sip.linphone.org](https://sip.linphone.org)" = "[https://sip.linphone.org](https://sip.linphone.org)";
-"[linphone.org/contact](https://linphone.org/contact)" = "[linphone.org/contact](https://linphone.org/contact)";
+"[linphone.org/contact](https://brdsoft.com.br/contact)" = "[linphone.org/contact](https://brdsoft.com.br/contact)";
 "*" = "*";
 "**%@**" = "**%@**";
 "#" = "#";
@@ -201,7 +201,7 @@
 "conversation_dialog_edit_subject" = "Edit conversation subject";
 "conversation_dialog_set_subject" = "Set conversation subject";
 "conversation_dialog_subject_hint" = "Conversation subject";
-"conversation_end_to_end_encrypted_bottom_sheet_link" = "https://linphone.org/en/features/#security";
+"conversation_end_to_end_encrypted_bottom_sheet_link" = "https://brdsoft.com.br/en/features/#security";
 "conversation_end_to_end_encrypted_event_title" = "End-to-end encrypted conversation";
 "conversation_end_to_end_encrypted_event_subtitle" = "Messages in this conversation are e2e encrypted. Only your correspondent can decrypt them.";
 "conversation_ephemeral_messages_duration_disabled" = "Disabled";
@@ -520,11 +520,11 @@
 "username_error" = "Username error";
 "web_platform_forgotten_password_url" = "https://subscribe.linphone.org/";
 "web_platform_register_email_url" = "https://subscribe.linphone.org/register/email";
-"website_contact_url" = "https://linphone.org/contact";
-"website_download_url" = "https://linphone.org/linphone-softphone";
+"website_contact_url" = "https://brdsoft.com.br/contact";
+"website_download_url" = "https://brdsoft.com.br/linphone-softphone";
 "website_open_source_licences_usage_url" = "https://wiki.linphone.org/xwiki/wiki/public/view/Linphone/Third%20party%20components%20/";
-"website_user_guide_url" = "https://linphone.org/en/docs/";
-"website_privacy_policy_url" = "https://linphone.org/en/privacy-policy";
+"website_user_guide_url" = "https://brdsoft.com.br/en/docs/";
+"website_privacy_policy_url" = "https://brdsoft.com.br/en/privacy-policy";
 "website_terms_and_conditions_url" = "https://www.linphone.org/en/terms-of-use";
 "website_translate_weblate_url" = "https://weblate.linphone.org/";
 "welcome_carousel_skip" = "Skip";

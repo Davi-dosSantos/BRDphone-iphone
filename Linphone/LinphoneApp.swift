@@ -21,6 +21,10 @@ import SwiftUI
 import linphonesw
 import UserNotifications
 
+#if USE_CRASHLYTICS
+import Firebase
+#endif
+
 let accountTokenNotification = Notification.Name("AccountCreationTokenReceived")
 var displayedChatroomPeerAddr: String?
 
@@ -59,6 +63,11 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 	}
 					 
 	func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+		// Configure Firebase
+		#if USE_CRASHLYTICS
+		FirebaseApp.configure()
+		#endif
+		
 		// Set up notifications
 		UNUserNotificationCenter.current().delegate = self
 		
