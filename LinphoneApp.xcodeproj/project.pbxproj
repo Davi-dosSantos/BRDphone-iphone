@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		53206B1E2ED5EBCE00579640 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 53206B1D2ED5EBCE00579640 /* GoogleService-Info.plist */; };
 		53206B202ED5EBE100579640 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 53206B1F2ED5EBE000579640 /* GoogleService-Info.plist */; };
+		53206B242ED5F75600579640 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 53206B232ED5F75600579640 /* FirebaseMessaging */; };
 		660AAF7F2B839272004C0FA6 /* msgNotificationService.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 660AAF7B2B839271004C0FA6 /* msgNotificationService.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		6613A0AE2BAEB7DF008923A4 /* MeetingFragment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6613A0AD2BAEB7DF008923A4 /* MeetingFragment.swift */; };
 		6613A0B42BAEBE3F008923A4 /* MeetingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6613A0B32BAEBE3F008923A4 /* MeetingViewModel.swift */; };
@@ -469,6 +470,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				53206B242ED5F75600579640 /* FirebaseMessaging in Frameworks */,
 				D7D5AD7F2DD34F0E00016721 /* AppAuth in Frameworks */,
 				D7DF8BE72E2104DC003A3BC7 /* ElegantEmojiPicker in Frameworks */,
 				C618BF562D75CA03005A00E0 /* linphonesw in Frameworks */,
@@ -1973,6 +1975,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		53206B232ED5F75600579640 /* FirebaseMessaging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D7D5AD7C2DD34E7C00016721 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseMessaging;
+		};
 		C618BF552D75CA03005A00E0 /* linphonesw */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = C618BF542D75CA03005A00E0 /* XCRemoteSwiftPackageReference "linphone-sdk-swift-ios" */;

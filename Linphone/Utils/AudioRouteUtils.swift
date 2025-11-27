@@ -2,7 +2,7 @@
  * Copyright (c) 2010-2023 Belledonne Communications SARL.
  *
  * This file is part of linphone-android
- * (see https://www.linphone.org).
+ * (see https://www.brdsoft.com.br).
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

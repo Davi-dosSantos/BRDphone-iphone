@@ -353,11 +353,13 @@ class TelecomManager: ObservableObject {
 	}
 	
 	func displayIncomingCall(call: Call?, handle: String, hasVideo: Bool, callId: String, displayName: String) {
+		Log.info("[TelecomManager] displayIncomingCall called - callId: \(callId), handle: \(handle), displayName: \(displayName)")
 		let uuid = UUID()
 		let callInfo = CallInfo.newIncomingCallInfo(callId: callId)
 		
 		providerDelegate.callInfos.updateValue(callInfo, forKey: uuid)
 		providerDelegate.uuids.updateValue(uuid, forKey: callId)
+		Log.info("[TelecomManager] Calling reportIncomingCall with UUID: \(uuid)")
 		providerDelegate.reportIncomingCall(call: call, uuid: uuid, handle: handle, hasVideo: hasVideo, displayName: displayName)
 	}
 	
@@ -389,8 +391,24 @@ class TelecomManager: ObservableObject {
 	
 	static func callKitEnabled(core: Core) -> Bool {
 #if !targetEnvironment(simulator)
-		return core.callkitEnabled
+		let enabled = core.callkitEnabled
+		Log.info("[TelecomManager] callKitEnabled (device): \(enabled)")
+		return enabled
 #else
+		Log.info("[TelecomManager] callKitEnabled (simulator): returning false")
+		return false
+#endif
+	}
+	
+	// Versão simplificada sem Core (para usar em push handler antes de Core estar pronto)
+	static func callKitEnabled() -> Bool {
+#if !targetEnvironment(simulator)
+		// Em produção, CallKit deve estar sempre habilitado
+		// Se precisar verificar preferência do usuário, adicione lógica aqui
+		Log.info("[TelecomManager] callKitEnabled (static check - device): true")
+		return true
+#else
+		Log.info("[TelecomManager] callKitEnabled (static check - simulator): false")
 		return false
 #endif
 	}
@@ -555,10 +573,13 @@ class TelecomManager: ObservableObject {
 			
 			switch cstate {
 			case .IncomingReceived:
+				Log.info("[TelecomManager] Call state changed to IncomingReceived, callId: \(callId)")
 				let addr = call.remoteAddress
 				incomingDisplayName(call: call) { displayNameResult in
+					Log.info("[TelecomManager] Got display name: \(displayNameResult) for callId: \(callId)")
 					let displayName = displayNameResult
 	#if targetEnvironment(simulator)
+					Log.info("[TelecomManager] Running in SIMULATOR - setting callInProgress and callDisplayed to true")
 					DispatchQueue.main.async {
 						self.outgoingCallStarted = false
 						self.callStarted = false
@@ -568,21 +589,32 @@ class TelecomManager: ObservableObject {
 								self.callDisplayed = true
 							}
 						}
+						Log.info("[TelecomManager] Simulator: callInProgress=\(self.callInProgress), callDisplayed=\(self.callDisplayed)")
 					}
 	#endif
 					if TelecomManager.callKitEnabled(core: core) {
+						Log.info("[TelecomManager] CallKit is enabled, processing incoming call")
 						let uuid = self.providerDelegate.uuids["\(callId)"]
 						TelecomManager.uuidReplacedCall = callId
 						
 						if uuid != nil {
+							Log.info("[TelecomManager] UUID already exists, updating call")
 							// Tha app is now registered, updated the call already existed.
 							self.providerDelegate.updateCall(uuid: uuid!, handle: addr!.asStringUriOnly(), hasVideo: self.remoteConfVideo, displayName: displayName)
 						} else {
+							Log.info("[TelecomManager] New UUID, displaying incoming call")
 							let videoEnabled = call.remoteParams?.videoEnabled ?? false
 							let isConference = call.callLog?.wasConference() ?? false
 							let videoDir = call.remoteParams?.videoDirection != MediaDirection.Inactive
 							self.displayIncomingCall(call: call, handle: addr!.asStringUriOnly(), hasVideo: videoEnabled && videoDir && !isConference, callId: callId, displayName: displayName)
 						}
+					} else {
+						Log.info("[TelecomManager] CallKit is NOT enabled - checking if in simulator...")
+#if targetEnvironment(simulator)
+						Log.info("[TelecomManager] In simulator, call UI should already be displayed via callInProgress/callDisplayed flags")
+#else
+						Log.error("[TelecomManager] CallKit NOT enabled on DEVICE! Check core.callkitEnabled setting")
+#endif
 					}
 				}
 			case .StreamsRunning:

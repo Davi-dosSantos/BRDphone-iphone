@@ -239,6 +239,7 @@ class CoreContext: ObservableObject {
 				}
 				
 			}, onCallStateChanged: { (core: Core, call: Call, cstate: Call.State, message: String) in
+				Log.info("[CoreContext] onCallStateChanged - state: \(cstate), callId: \(call.callLog?.callId ?? "unknown")")
 				TelecomManager.shared.onCallStateChanged(core: core, call: call, state: cstate, message: message)
 				
 				if core.calls.isEmpty {

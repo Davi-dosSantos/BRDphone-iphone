@@ -61,8 +61,8 @@ struct LoginFragment: View {
 					}
 					
 					if self.isShowPopup {
-						let generalTerms = String(format: "[%@](%@)", String(localized: "assistant_dialog_general_terms_label"), "https://www.linphone.org/en/terms-of-use/")
-						let privacyPolicy = String(format: "[%@](%@)", String(localized: "assistant_dialog_privacy_policy_label"), "https://brdsoft.com.br/privacy-policy")
+						let generalTerms = String(format: "[%@](%@)", String(localized: "assistant_dialog_general_terms_label"), "https://www.brdsoft.com.bt")
+						let privacyPolicy = String(format: "[%@](%@)", String(localized: "assistant_dialog_privacy_policy_label"), "https://brdsoft.com.br")
 						let splitMsg = String(localized: "assistant_dialog_general_terms_and_privacy_policy_message").components(separatedBy: "%@")
 						if splitMsg.count == 3 { // We expect form of  STRING %A STRING %@ STRING
 							let contentPopup1 = Text(.init(splitMsg[0]))
@@ -120,57 +120,62 @@ struct LoginFragment: View {
 	
 	func innerScrollView(geometry: GeometryProxy) -> some View {
 		VStack {
-			ZStack {
-				HStack {
-					if isShowBack {
-						Image("caret-left")
+			// Top bar: back button and help
+			HStack {
+				if isShowBack {
+					Image("caret-left")
+						.renderingMode(.template)
+						.resizable()
+						.foregroundStyle(Color.grayMain2c500)
+						.frame(width: 25, height: 25)
+						.padding(.all, 10)
+						.onTapGesture {
+							withAnimation {
+								onBackPressed?()
+							}
+						}
+				} else {
+					Color.clear
+						.frame(width: 25, height: 25)
+						.padding(.all, 10)
+				}
+				Spacer()
+				Button {
+					withAnimation {
+						isShowHelpFragment = true
+					}
+				} label: {
+					HStack {
+						Image("question")
 							.renderingMode(.template)
 							.resizable()
 							.foregroundStyle(Color.grayMain2c500)
-							.frame(width: 25, height: 25)
-							.padding(.all, 10)
-							.onTapGesture {
-								withAnimation {
-									onBackPressed?()
-								}
-							}
-					} else {
-						Color.clear
-							.frame(width: 25, height: 25)
-							.padding(.all, 10)
+							.frame(width: 20, height: 20)
+						Text("help_title")
+							.foregroundStyle(Color.grayMain2c500)
+							.default_text_style_orange_600(styleSize: 15)
+							.frame(height: 35)
 					}
-
-					Spacer()
-					
-					Button {
-						withAnimation {
-							isShowHelpFragment = true
-						}
-					} label: {
-						HStack {
-							Image("question")
-								.renderingMode(.template)
-								.resizable()
-								.foregroundStyle(Color.grayMain2c500)
-								.frame(width: 20, height: 20)
-							
-							Text("help_title")
-								.foregroundStyle(Color.grayMain2c500)
-								.default_text_style_orange_600(styleSize: 15)
-								.frame(height: 35)
-						}
-						.padding(.horizontal, 20)
-					}
+					.padding(.horizontal, 20)
 				}
-
-				Text("assistant_account_login")
-					.default_text_style_800(styleSize: 20)
 			}
 			.frame(width: geometry.size.width)
-			.padding(.top, 10)
-			.padding(.bottom, 20)
+			.padding(.top, 0)
+			.padding(.bottom, 0)
+
+			// Logo centralizado, com altura máxima
+			Image("brd-logo")
+				.resizable()
+				.scaledToFit()
+				.frame(height: 120)
+
+			// Título
+			Text("assistant_account_login")
+				.default_text_style_800(styleSize: 20)
+				.padding(.bottom, 20)
 			
 			VStack(alignment: .leading) {
+                
 				Text(String(localized: "username")+"*")
 					.default_text_style_700(styleSize: 15)
 					.padding(.bottom, -5)
@@ -250,7 +255,7 @@ struct LoginFragment: View {
 				.padding(.bottom)
 				
 				HStack {
-					Text(.init(String(format: ("[%@](%@)"), String(localized: "assistant_forgotten_password"), "https://subscribe.linphone.org/")))
+					Text(.init(String(format: ("[%@](%@)"), String(localized: "assistant_forgotten_password"), "https://pabx01.brdvoz.com.br")))
 						.underline()
 						.tint(Color.grayMain2c600)
 						.default_text_style_600(styleSize: 15)
@@ -336,47 +341,50 @@ struct LoginFragment: View {
 			
 			Spacer()
 			
-			HStack(alignment: .center) {
-				
-				Spacer()
-				
-				Text("assistant_no_account_yet")
-					.default_text_style(styleSize: 15)
-					.foregroundStyle(Color.grayMain2c700)
-					.padding(.horizontal, 10)
-				
-				NavigationLink(destination: RegisterFragment(), isActive: $isLinkREGActive, label: { Text("assistant_account_register")
-						.default_text_style_white_600(styleSize: 20)
-						.frame(height: 35)
-				})
-				.disabled(!SharedMainViewModel.shared.generalTermsAccepted)
-				.padding(.horizontal, 20)
-				.padding(.vertical, 10)
-				.background(Color.orangeMain500)
-				.cornerRadius(60)
-				.padding(.horizontal, 10)
-				.simultaneousGesture(
-					TapGesture().onEnded {
-						self.linkActive = "REG"
-						if !SharedMainViewModel.shared.generalTermsAccepted {
-							withAnimation {
-								self.isShowPopup.toggle()
-							}
-						} else {
-							self.isLinkREGActive = true
-						}
-					}
-				)
-				
-				Spacer()
-			}
-			.padding(.bottom)
+//			HStack(alignment: .center) {
+//				
+//				Spacer()
+//				
+//				Text("assistant_no_account_yet")
+//					.default_text_style(styleSize: 15)
+//					.foregroundStyle(Color.grayMain2c700)
+//					.padding(.horizontal, 10)
+//				
+//				NavigationLink(destination: RegisterFragment(), isActive: $isLinkREGActive, label: { Text("assistant_account_register")
+//						.default_text_style_white_600(styleSize: 20)
+//						.frame(height: 35)
+//				})
+//				.disabled(!SharedMainViewModel.shared.generalTermsAccepted)
+//				.padding(.horizontal, 20)
+//				.padding(.vertical, 10)
+//				.background(Color.orangeMain500)
+//				.cornerRadius(60)
+//				.padding(.horizontal, 10)
+//				.simultaneousGesture(
+//					TapGesture().onEnded {
+//						self.linkActive = "REG"
+//						if !SharedMainViewModel.shared.generalTermsAccepted {
+//							withAnimation {
+//								self.isShowPopup.toggle()
+//							}
+//						} else {
+//							self.isLinkREGActive = true
+//						}
+//					}
+//				)
+//				
+//				Spacer()
+//			}
+//			.padding(.bottom)
 			
-			Image("mountain2")
-				.resizable()
-				.scaledToFill()
-				.frame(width: geometry.size.width, height: 60)
-				.clipped()
+//			Image("mountain2")
+//				.resizable()
+//				.scaledToFill()
+//				.frame(width: geometry.size.width, height: 60)
+//				.clipped()
+//            
+
+            
 		}
 		.frame(minHeight: geometry.size.height)
 		.padding(.bottom, keyboard.currentHeight)

@@ -28,7 +28,7 @@ class AccountLoginViewModel: ObservableObject {
 	@Published var passwd: String = ""
 	@Published var domain: String = "pabx01.brdvoz.com.br"
 	@Published var displayName: String = ""
-	@Published var transportType: String = "TLS"
+	@Published var transportType: String = "TCP"
 	@Published var authId: String = ""
 	@Published var outboundProxy: String = ""
 	
@@ -56,7 +56,7 @@ class AccountLoginViewModel: ObservableObject {
 					}
 				}
 				
-				if self.domain != "sip.linphone.org" {
+				if self.domain != "pabx01.brdvoz.com.br" {
 					if let assistantLinphone = Bundle.main.path(forResource: "assistant_third_party_default_values", ofType: nil) {
 						core.loadConfigFromXml(xmlUri: assistantLinphone)
 					}
@@ -118,34 +118,11 @@ class AccountLoginViewModel: ObservableObject {
 				// And we ensure the account will start the registration process
 				accountParams.registerEnabled = true
 				
-				if accountParams.pushNotificationAllowed {
-					accountParams.pushNotificationAllowed = true
-					accountParams.remotePushNotificationAllowed = true
-				}
-                Task{
-                    if let savedToken = UserDefaults.standard.string(forKey: "MyDeviceToken") {
-                        print("O token recuperado é: \(savedToken)")
-                        
-                        if let urlMiddleware = URL(string: "http://168.121.7.18:3000/user/upsert") {
-                            await MiddlewareServices.sendTokenToMiddleware(
-                                url: urlMiddleware,
-                                userID_Domain: String("sip:" + self.username + "@" + self.domain),
-                                token: savedToken
-                            )
-                            print("Envio do token para o Middleware finalizado com sucesso!")
-
-                        }     else {
-                            print("URL Inválida")
-                        }           } else {
-                            print("Token ainda não foi gerado.")
-                        }
-                }
-#if DEBUG
-				let pushEnvironment = ".dev"
-#else
-				let pushEnvironment = ""
-#endif
-				accountParams.pushNotificationConfig?.provider = "apns" + pushEnvironment
+				// DESABILITAR push notifications nativas do Linphone
+				// Agora usamos FCM mediado pelo middleware
+				accountParams.pushNotificationAllowed = false
+				accountParams.remotePushNotificationAllowed = false
+				accountParams.pushNotificationConfig?.provider = nil
 				
 				self.mCoreDelegate = CoreDelegateStub(onAccountRegistrationStateChanged: { (core: Core, account: Account, state: RegistrationState, message: String) in
 					
@@ -153,6 +130,17 @@ class AccountLoginViewModel: ObservableObject {
 							 "\( String(describing: account.params?.identityAddress?.asString())) = \(message)\n")
 					
 					switch state {
+					case .Ok:  // Registration successful
+						Log.info("✓ Registro bem-sucedido para \(account.params?.identityAddress?.asStringUriOnly() ?? "unknown")")
+						
+						// Envia o token FCM para o middleware após registro bem-sucedido
+						if let identity = account.params?.identityAddress?.asStringUriOnly() {
+							Task {
+								Log.info("BRD_FCM: Enviando token FCM após login bem-sucedido")
+								await MiddlewareServices.registerFCMToken(userID_Domain: identity)
+							}
+						}
+						
 					case .Failed:  // If registration failed, remove account from core
 						if let authInfo = account.findAuthInfo() {
 							core.removeAuthInfo(info: authInfo)
@@ -179,7 +167,7 @@ class AccountLoginViewModel: ObservableObject {
 				
 				DispatchQueue.main.async {
 					self.domain = "pabx01.brdvoz.com.br"
-					self.transportType = "TLS"
+					self.transportType = "TCP"
 					self.authId = ""
 					self.outboundProxy = ""
 				}

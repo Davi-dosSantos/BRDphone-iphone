@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<config xmlns="http://www.linphone.org/xsds/lpconfig.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.linphone.org/xsds/lpconfig.xsd lpconfig.xsd">
+<config xmlns="http://www.brdsoft.com.br/xsds/lpconfig.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.brdsoft.com.br/xsds/lpconfig.xsd lpconfig.xsd">
   <section name="proxy_default_values">
 	<entry name="avpf" overwrite="true">1</entry>
 	<entry name="dial_escape_plus" overwrite="true">0</entry>

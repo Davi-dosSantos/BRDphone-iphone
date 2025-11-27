@@ -85,13 +85,27 @@ struct ContentView: View {
 	@State var isShowUpdatePasswordPopup: Bool = false
 	@State var passwordUpdateAddress: String = ""
 	
+	// Computed property para determinar quando mostrar CallView
+	private var shouldShowCallView: Bool {
+#if targetEnvironment(simulator)
+		// No simulador, mostra para qualquer chamada em progresso
+		return telecomManager.callDisplayed && (telecomManager.callInProgress || telecomManager.callConnected) && !telecomManager.meetingWaitingRoomDisplayed
+#else
+		// Em dispositivo físico, exige outgoingCallStarted ou callConnected
+		return telecomManager.callDisplayed && ((telecomManager.callInProgress && telecomManager.outgoingCallStarted) || telecomManager.callConnected) && !telecomManager.meetingWaitingRoomDisplayed
+#endif
+	}
+	
 	var body: some View {
 		GeometryReader { geometry in
 			VStack(spacing: 0) {
-				if accountProfileViewModel.accountError && (!telecomManager.callInProgress || (telecomManager.callInProgress && !telecomManager.callDisplayed)) {
+				let showAccountError = accountProfileViewModel.accountError && (!telecomManager.callInProgress || (telecomManager.callInProgress && !telecomManager.callDisplayed))
+				if showAccountError {
 					HStack {
 						if let index = accountProfileViewModel.defaultAccountModelIndex,
-						   index < coreContext.accounts.count, coreContext.accounts[index].isDefaultAccount, coreContext.accounts[index].registrationStateAssociatedUIColor == .orangeWarning600 {
+						   index < coreContext.accounts.count,
+						   coreContext.accounts[index].isDefaultAccount,
+						   coreContext.accounts[index].registrationStateAssociatedUIColor == .orangeWarning600 {
 							Image("warning-circle")
 								.renderingMode(.template)
 								.resizable()
@@ -1370,7 +1384,7 @@ struct ContentView: View {
 							.transition(.opacity.combined(with: .move(edge: .bottom)))
 					}
 					
-					if telecomManager.callDisplayed && ((telecomManager.callInProgress && telecomManager.outgoingCallStarted) || telecomManager.callConnected) && !telecomManager.meetingWaitingRoomDisplayed {
+					if shouldShowCallView {
 						CallView(
 							fullscreenVideo: $fullscreenVideo,
 							isShowStartCallFragment: $isShowStartCallFragment,

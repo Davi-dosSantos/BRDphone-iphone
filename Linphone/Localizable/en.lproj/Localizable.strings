@@ -525,7 +525,7 @@
 "website_open_source_licences_usage_url" = "https://wiki.linphone.org/xwiki/wiki/public/view/Linphone/Third%20party%20components%20/";
 "website_user_guide_url" = "https://brdsoft.com.br/en/docs/";
 "website_privacy_policy_url" = "https://brdsoft.com.br/en/privacy-policy";
-"website_terms_and_conditions_url" = "https://www.linphone.org/en/terms-of-use";
+"website_terms_and_conditions_url" = "https://www.brdsoft.com.br/en/terms-of-use";
 "website_translate_weblate_url" = "https://weblate.linphone.org/";
 "welcome_carousel_skip" = "Skip";
 "welcome_page_1_message" = "A **secured**, **open source** and **French** communication app.";

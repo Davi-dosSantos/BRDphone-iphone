@@ -645,6 +645,63 @@ struct CallView: View {
 					}
 					.background(.clear)
 				}
+#if targetEnvironment(simulator)
+				// No simulador, mostrar botões de atender/recusar para chamadas recebidas
+				if !telecomManager.outgoingCallStarted && telecomManager.callInProgress && !telecomManager.callConnected {
+					VStack {
+						Spacer()
+						
+						Text(String(localized: "Incoming call"))
+							.foregroundStyle(.white)
+							.default_text_style_300(styleSize: 25)
+							.padding(.bottom, 40)
+						
+						HStack(spacing: 60) {
+							// Botão recusar
+							Button(action: {
+								callViewModel.terminateCall()
+							}) {
+								VStack {
+									Image(systemName: "phone.down.fill")
+										.resizable()
+										.frame(width: 30, height: 30)
+										.padding(20)
+										.background(Color.red)
+										.foregroundStyle(.white)
+										.clipShape(Circle())
+									
+									Text(String(localized: "Decline"))
+										.foregroundStyle(.white)
+										.font(.caption)
+								}
+							}
+							
+							// Botão atender
+							Button(action: {
+								callViewModel.acceptCall()
+							}) {
+								VStack {
+									Image(systemName: "phone.fill")
+										.resizable()
+										.frame(width: 30, height: 30)
+										.padding(20)
+										.background(Color.green)
+										.foregroundStyle(.white)
+										.clipShape(Circle())
+									
+									Text(String(localized: "Answer"))
+										.foregroundStyle(.white)
+										.font(.caption)
+								}
+							}
+						}
+						.padding(.bottom, 100)
+						
+						Spacer()
+					}
+					.background(.clear)
+				}
+#endif
 			} else if callViewModel.isConference && !telecomManager.outgoingCallStarted && callViewModel.activeSpeakerParticipant != nil {
 				let heightValue = (fullscreenVideo && !telecomManager.isPausedByRemote ? geometry.size.height : geometry.size.height - (minBottomSheetHeight * geometry.size.height > 80 ? minBottomSheetHeight * geometry.size.height : 78) - 40 - 20 + geometry.safeAreaInsets.bottom)
 				if optionsChangeLayout == 1 && callViewModel.participantList.count <= 5 {

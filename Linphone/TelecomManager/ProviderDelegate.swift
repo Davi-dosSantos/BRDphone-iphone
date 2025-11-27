@@ -86,6 +86,7 @@ class ProviderDelegate: NSObject {
 	}
 	
 	func reportIncomingCall(call: Call?, uuid: UUID, handle: String, hasVideo: Bool, displayName: String) {
+		Log.info("[ProviderDelegate] reportIncomingCall STARTED - UUID: \(uuid)")
 		let update = CXCallUpdate()
 		update.remoteHandle = CXHandle(type: .generic, value: handle)
 		update.hasVideo = hasVideo
@@ -109,9 +110,11 @@ class ProviderDelegate: NSObject {
 		 */
 		
 		Log.info("CallKit: report new incoming call with call-id: [\(callId)] and UUID: [\(uuid.description)]")
+		Log.info("[ProviderDelegate] About to call provider.reportNewIncomingCall")
 		// TelecomManager.instance().setHeldOtherCalls(exceptCallid: callId ?? "") // ALREADY COMMENTED ON LINPHONE-IPHONE 5.2
 		provider.reportNewIncomingCall(with: uuid, update: update) { error in
 			if error == nil {
+				Log.info("[ProviderDelegate] provider.reportNewIncomingCall SUCCESS for UUID: \(uuid)")
 				if TelecomManager.shared.endCallkit {
 					CoreContext.shared.doOnCoreQueue(synchronous: true) { core in
 						let call = core.getCallByCallid(callId: callId)
@@ -121,6 +124,7 @@ class ProviderDelegate: NSObject {
 					}
 				}
 			} else {
+				Log.error("[ProviderDelegate] provider.reportNewIncomingCall FAILED for UUID: \(uuid)")
 				Log.error("CallKit: cannot complete incoming call with call-id: [\(callId)] and UUID: [\(uuid.description)] from [\(handle)] caused by [\(error!.localizedDescription)]")
 				let code = (error as NSError?)?.code
 				switch code {

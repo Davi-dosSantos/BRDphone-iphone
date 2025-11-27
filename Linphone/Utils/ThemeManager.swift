@@ -134,7 +134,7 @@ final class ThemeManager: ObservableObject {
         main100: Color(hex: "#D0DEE8"),      // Um tom bem claro (quase branco) para fundos
         main100Alpha50: Color(hex: "#80D0DEE8"), // O mesmo tom com 50% de transparência
         main300: Color(hex: "#5B7CA0"),      // Um tom intermediário suave
-        main500: Color(hex: "#183E65"),      // A cor oficial da BRD
+        main500: Color(hex: "#183E65"),      // Cor oficial da BRD
         main700: Color(hex: "#0F2942")       // Um tom mais escuro para estados "pressionados"
     )
 }
