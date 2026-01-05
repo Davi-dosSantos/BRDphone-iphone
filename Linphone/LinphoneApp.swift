@@ -73,7 +73,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 		// Linphone SDK já está configurado para receber a chamada SIP normalmente
 		
 		if let callType = userInfo["type"] as? String, callType == "call" {
-			Log.info("BRD_PUSH: ✅ Silent push recebida - app acordado")
+			Log.info("BRD_PUSH: Silent push recebida - app acordado")
 			Log.info("BRD_PUSH: Aguardando INVITE SIP...")
 			completionHandler(.newData)
 		} else {
@@ -155,9 +155,9 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 			   let account = coreContext.mCore?.defaultAccount ?? coreContext.mCore?.accountList.first,
 			   let identity = account.params?.identityAddress?.asStringUriOnly() {
 				await MiddlewareServices.registerAPNSToken(userID_Domain: identity, voipToken: token)
-				Log.info("BRD_PUSHKIT: ✅ Token VoIP enviado para API")
+				Log.info("BRD_PUSHKIT: Token VoIP enviado para API")
 			} else {
-				Log.warn("BRD_PUSHKIT: ⚠️ Conta ainda não disponível, token VoIP será enviado quando conta estiver pronta")
+				Log.warn("BRD_PUSHKIT: Conta ainda não disponível, token VoIP será enviado quando conta estiver pronta")
 				// Salva token para enviar depois
 				UserDefaults.standard.set(token, forKey: "pendingVoIPToken")
 			}
@@ -189,15 +189,15 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 			?? payload.dictionaryPayload["call-id"] as? String 
 			?? UUID().uuidString
 		
-		Log.info("BRD_PUSHKIT: ✅ Push VoIP recebido - processando chamada")
+		Log.info("BRD_PUSHKIT: Push VoIP recebido - processando chamada")
 		Log.info("BRD_PUSHKIT: De: \(fromUser)")
 		Log.info("BRD_PUSHKIT: Nome: \(displayName)")
 		Log.info("BRD_PUSHKIT: Call-ID: \(callId)")
 		
-		// ⚠️ CRÍTICO: Chama completion() IMEDIATAMENTE (Apple exige < 3 segundos)
+		// CRÍTICO: Chama completion() IMEDIATAMENTE (Apple exige < 3 segundos)
 		// O resto do processamento continua assíncrono
 		completion()
-		Log.info("BRD_PUSHKIT: ✅ completion() chamado - Apple satisfeita")
+		Log.info("BRD_PUSHKIT: completion() chamado - Apple satisfeita")
 		
 		// PASSO 1: ACORDAR LINPHONE CORE (primeiro, antes de CallKit)
 		if let coreContext = coreContext {
@@ -211,7 +211,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 						try core.start()
 						Log.info("BRD_PUSHKIT: ✓ Core iniciado com sucesso")
 					} catch {
-						Log.error("BRD_PUSHKIT: ❌ Erro ao iniciar core: \(error)")
+						Log.error("BRD_PUSHKIT:   Erro ao iniciar core: \(error)")
 					}
 				} else {
 					Log.info("BRD_PUSHKIT: ✓ Core já está rodando (estado: \(core.globalState))")
@@ -224,12 +224,12 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 						try account.refreshRegister()
 						Log.info("BRD_PUSHKIT: ✓ Registro SIP atualizado")
 					} catch {
-						Log.error("BRD_PUSHKIT: ❌ Erro no refresh SIP: \(error)")
+						Log.error("BRD_PUSHKIT:   Erro no refresh SIP: \(error)")
 					}
 				}
 			}
 		} else {
-			Log.error("BRD_PUSHKIT: ❌ CoreContext não disponível!")
+			Log.error("BRD_PUSHKIT:   CoreContext não disponível!")
 		}
 		
 		// PASSO 2: REPORTAR CHAMADA AO CALLKIT (OBRIGATÓRIO!)
@@ -251,20 +251,20 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 			providerDelegate.callInfos[uuid] = callInfo
 			providerDelegate.uuids[callId] = uuid
 			
-			Log.info("BRD_PUSHKIT: ✅ CallKit habilitado - reportando chamada com UUID: \(uuid)")
+			Log.info("BRD_PUSHKIT: CallKit habilitado - reportando chamada com UUID: \(uuid)")
 			
 			// Reporta ao CallKit (isso mostra a tela de chamada nativa do iOS)
 			providerDelegate.provider.reportNewIncomingCall(with: uuid, update: update) { error in
 				if let error = error {
-					Log.error("BRD_PUSHKIT: ❌ Erro ao reportar chamada ao CallKit: \(error.localizedDescription)")
+					Log.error("BRD_PUSHKIT:   Erro ao reportar chamada ao CallKit: \(error.localizedDescription)")
 					Log.error("BRD_PUSHKIT: Código do erro: \((error as NSError).code)")
 				} else {
-					Log.info("BRD_PUSHKIT: ✅✅✅ SUCESSO - Chamada reportada ao CallKit!")
+					Log.info("BRD_PUSHKIT: SUCESSO - Chamada reportada ao CallKit!")
 					Log.info("BRD_PUSHKIT: Tela de chamada nativa do iOS deve aparecer agora")
 				}
 			}
 		} else {
-			Log.error("BRD_PUSHKIT: ❌❌❌ CallKit DESABILITADO - chamadas com tela bloqueada NÃO FUNCIONARÃO!")
+			Log.error("BRD_PUSHKIT: CallKit DESABILITADO - chamadas com tela bloqueada NÃO FUNCIONARÃO!")
 			Log.error("BRD_PUSHKIT: Habilite CallKit nas configurações do app")
 		}
 		
@@ -274,7 +274,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 	
 	/// Chamado se o token VoIP for invalidado
 	func pushRegistry(_ registry: PKPushRegistry, didInvalidatePushTokenFor type: PKPushType) {
-		Log.warn("BRD_PUSHKIT: ⚠️ Token VoIP foi invalidado")
+		Log.warn("BRD_PUSHKIT: Token VoIP foi invalidado")
 		UserDefaults.standard.removeObject(forKey: "lastVoIPToken")
 	}
 	
@@ -285,26 +285,26 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 		// Verifica token VoIP (PushKit) - PRINCIPAL para VoIP
 		if let voipToken = UserDefaults.standard.string(forKey: "lastVoIPToken"),
 		   let voipDate = UserDefaults.standard.object(forKey: "lastVoIPTokenDate") as? Date {
-			Log.info("BRD_PUSH: ✅ Token VoIP (PushKit): \(voipToken)")
+			Log.info("BRD_PUSH: Token VoIP (PushKit): \(voipToken)")
 			Log.info("BRD_PUSH: VoIP recebido em: \(voipDate)")
 		} else {
-			Log.warn("BRD_PUSH: ❌ Token VoIP ainda não foi recebido")
+			Log.warn("BRD_PUSH:   Token VoIP ainda não foi recebido")
 		}
 		
 		// Verifica token FCM
 		if let fcmToken = UserDefaults.standard.string(forKey: "currentFCMToken") {
-			Log.info("BRD_PUSH: ✅ Token FCM: \(fcmToken)")
+			Log.info("BRD_PUSH: Token FCM: \(fcmToken)")
 		} else {
-			Log.warn("BRD_PUSH: ❌ Token FCM ainda não foi gerado")
+			Log.warn("BRD_PUSH: Token FCM ainda não foi gerado")
 		}
 		
 		// Verifica Background Modes
 		if let backgroundModes = Bundle.main.object(forInfoDictionaryKey: "UIBackgroundModes") as? [String] {
 			Log.info("BRD_PUSH: Background Modes: \(backgroundModes.joined(separator: ", "))")
 			if backgroundModes.contains("voip") {
-				Log.info("BRD_PUSH: ✅ VoIP background mode habilitado")
+				Log.info("BRD_PUSH: VoIP background mode habilitado")
 			} else {
-				Log.error("BRD_PUSH: ❌ VoIP background mode NÃO habilitado!")
+				Log.error("BRD_PUSH:   VoIP background mode NÃO habilitado!")
 			}
 		}
 		
@@ -573,12 +573,12 @@ extension AppDelegate: MessagingDelegate {
 						
 						// Verifica se há token VoIP pendente para enviar
 						if let pendingVoIPToken = UserDefaults.standard.string(forKey: "pendingVoIPToken") {
-							Log.info("BRD_FCM: ✅ Token VoIP pendente encontrado, enviando para API...")
+							Log.info("BRD_FCM: Token VoIP pendente encontrado, enviando para API...")
 							Task {
 								await MiddlewareServices.registerAPNSToken(userID_Domain: identity, voipToken: pendingVoIPToken)
 								// Remove token pendente após envio
 								UserDefaults.standard.removeObject(forKey: "pendingVoIPToken")
-								Log.info("BRD_FCM: ✅ Token VoIP pendente enviado com sucesso")
+								Log.info("BRD_FCM: Token VoIP pendente enviado com sucesso")
 							}
 						} else if let currentVoIPToken = UserDefaults.standard.string(forKey: "lastVoIPToken") {
 							// Se não há pendente, verifica se precisa reenviar o atual

@@ -17,6 +17,7 @@ class MiddlewareServices {
     // Configure a URL da sua API aqui
     private static let middlewareBaseURL = "http://168.121.7.18:3000"
     private static let tokenEndpoint = "/user/upsert"
+    private static let unregisterEndpoint = "/user/deleteToken"
     
     // MARK: - Public Methods
     
@@ -31,6 +32,69 @@ class MiddlewareServices {
         }
         
         await sendTokenToMiddleware(url: url, userID_Domain: userID_Domain, token: voipToken)
+    }
+    
+    /// Remove o registro do token VoIP (APNs) do middleware (usado no logout)
+    public static func unregisterAPNSToken(userID_Domain: String) async {
+        Log.info("BRD_APNS: Removendo registro de token VoIP da API")
+        
+        // Obtém o token armazenado localmente
+        guard let token = UserDefaults.standard.string(forKey: "lastSentAPNSToken") else {
+            Log.warn("BRD_APNS: Nenhum token APNS encontrado para desregistrar")
+            return
+        }
+        
+        // Constrói a URL completa
+        guard let url = URL(string: middlewareBaseURL + unregisterEndpoint) else {
+            Log.error("BRD_SERVER: URL inválida: \(middlewareBaseURL + unregisterEndpoint)")
+            return
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        request.setValue("application/json; charset=UTF-8", forHTTPHeaderField: "Content-Type")
+        request.timeoutInterval = 10.0
+        
+        let jsonParams: [String: Any] = [
+            "userID_Domain": userID_Domain,
+            "token": token
+        ]
+        
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: jsonParams)
+            
+            if let jsonString = String(data: request.httpBody!, encoding: .utf8) {
+                Log.info("BRD_SERVER: Payload JSON (unregister): \(jsonString)")
+            }
+            
+            // Envia a requisição
+            let (data, response) = try await URLSession.shared.data(for: request)
+            
+            guard let httpResponse = response as? HTTPURLResponse else {
+                Log.error("BRD_SERVER: Resposta inválida do servidor (unregister)")
+                return
+            }
+            
+            let responseBody = String(data: data, encoding: .utf8) ?? "N/A"
+            Log.info("BRD_SERVER: Status HTTP (unregister): \(httpResponse.statusCode)")
+            Log.info("BRD_SERVER: Resposta do servidor (unregister): \(responseBody)")
+            
+            if (200...299).contains(httpResponse.statusCode) {
+                Log.info("BRD_SERVER: Token VoIP/APNS removido com sucesso da API!")
+                
+                // Remove informações locais do token
+                UserDefaults.standard.removeObject(forKey: "lastSentAPNSToken")
+                UserDefaults.standard.removeObject(forKey: "lastAPNSTokenSentDate")
+                Log.info("BRD_SERVER: Token VoIP removido do cache local")
+            } else {
+                Log.error("BRD_SERVER: Erro ao remover token (Status: \(httpResponse.statusCode))")
+                Log.error("BRD_SERVER: Corpo da resposta: \(responseBody)")
+            }
+            
+        } catch {
+            Log.error("BRD_SERVER: Exceção ao remover token: \(error.localizedDescription)")
+            Log.error("BRD_SERVER: Tipo de erro: \(type(of: error))")
+        }
     }
     
     /// Mantém método antigo para compatibilidade (deprecated)
@@ -95,19 +159,19 @@ class MiddlewareServices {
             Log.info("BRD_SERVER: Resposta do servidor: \(responseBody)")
             
             if (200...299).contains(httpResponse.statusCode) {
-                Log.info("BRD_SERVER: ✅✅✅ Token VoIP/APNS registrado com sucesso na API!")
+                Log.info("BRD_SERVER: Token VoIP/APNS registrado com sucesso na API!")
                 
                 // Salva a informação de que o token foi enviado
                 UserDefaults.standard.set(token, forKey: "lastSentAPNSToken")
                 UserDefaults.standard.set(Date(), forKey: "lastAPNSTokenSentDate")
                 Log.info("BRD_SERVER: Token VoIP salvo em cache local")
             } else {
-                Log.error("BRD_SERVER: ❌ Erro ao enviar token (Status: \(httpResponse.statusCode))")
+                Log.error("BRD_SERVER: Erro ao enviar token (Status: \(httpResponse.statusCode))")
                 Log.error("BRD_SERVER: Corpo da resposta: \(responseBody)")
             }
             
         } catch {
-            Log.error("BRD_SERVER: ❌ Exceção ao enviar token: \(error.localizedDescription)")
+            Log.error("BRD_SERVER:   Exceção ao enviar token: \(error.localizedDescription)")
             Log.error("BRD_SERVER: Tipo de erro: \(type(of: error))")
         }
         

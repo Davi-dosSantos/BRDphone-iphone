@@ -257,6 +257,9 @@ class AccountModel: ObservableObject {
 	}
 	
 	func logout() {
+		// Obtém identidade antes de remover a conta
+		let identity = self.account.params?.identityAddress?.asStringUriOnly() ?? ""
+		
 		CoreContext.shared.doOnCoreQueue { core in
 			Log.info("Account \(self.account.displayName()) has been removed")
 			core.removeAccount(account: self.account)
@@ -264,6 +267,15 @@ class AccountModel: ObservableObject {
 			if let authInfo = self.account.findAuthInfo() {
 				core.removeAuthInfo(info: authInfo)
 			}
+		}
+		
+		// Chama API para remover token APNS/VoIP do middleware
+		if !identity.isEmpty {
+			Task {
+				await MiddlewareServices.unregisterAPNSToken(userID_Domain: identity)
+			}
+		} else {
+			Log.warn("BRD_LOGOUT: Não foi possível obter identidade para remover token APNS")
 		}
 	}
 	
