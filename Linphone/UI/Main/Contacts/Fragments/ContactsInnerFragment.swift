@@ -21,26 +21,26 @@ import SwiftUI
 import linphonesw
 
 struct ContactsInnerFragment: View {
-	
+
 	@ObservedObject var sharedMainViewModel = SharedMainViewModel.shared
 	@ObservedObject var contactsManager = ContactsManager.shared
-	
+
 	@EnvironmentObject var contactsListViewModel: ContactsListViewModel
-	
+
 	@State private var isFavoriteOpen = true
-	
+
 	@Binding var showingSheet: Bool
 	@Binding var text: String
-	
+
 	var body: some View {
 		VStack(alignment: .leading) {
 			if contactsManager.avatarListModel.contains(where: { $0.starred }) {
 				HStack(alignment: .center) {
 					Text("contacts_list_favourites_title")
 						.default_text_style_800(styleSize: 16)
-					
+
 					Spacer()
-					
+
 					Image(isFavoriteOpen ? "caret-up" : "caret-down")
 						.renderingMode(.template)
 						.resizable()
@@ -56,35 +56,43 @@ struct ContactsInnerFragment: View {
 						isFavoriteOpen.toggle()
 					}
 				}
-				
+
 				if isFavoriteOpen {
 					FavoriteContactsListFragment(showingSheet: $showingSheet)
-					.zIndex(-1)
-					.transition(.move(edge: .top))
+						.zIndex(-1)
+						.transition(.move(edge: .top))
 				}
-				
+
 				HStack(alignment: .center) {
 					Text("contacts_list_all_contacts_title")
 						.default_text_style_800(styleSize: 16)
-					
+
 					Spacer()
 				}
 				.padding(.top, 10)
 				.padding(.horizontal, 16)
 			}
-			
+
 			VStack {
 				List {
-					ContactsListFragment(showingSheet: $showingSheet, startCallFunc: {_ in })}
-				.safeAreaInset(edge: .top, content: {
-					Spacer()
-						.frame(height: 12)
-				})
+					ContactsListFragment(showingSheet: $showingSheet, startCallFunc: { _ in })
+				}
+				.safeAreaInset(
+					edge: .top,
+					content: {
+						Spacer()
+							.frame(height: 12)
+					}
+				)
 				.listStyle(.plain)
-				.if(sharedMainViewModel.cardDavFriendsListsCount > 0) { view in
-					view.refreshable {
+				// BRD: Adicionado refreshable manual para contatos locais
+				.refreshable {
+					// Atualiza contatos CardDAV se houver
+					if sharedMainViewModel.cardDavFriendsListsCount > 0 {
 						contactsManager.refreshCardDavContacts()
 					}
+					// Sempre atualiza contatos locais
+					contactsManager.fetchContacts()
 				}
 				.overlay(
 					VStack {
@@ -95,13 +103,16 @@ struct ContactsInnerFragment: View {
 								.scaledToFit()
 								.clipped()
 								.padding(.all)
-							Text(!text.isEmpty ? "list_filter_no_result_found" : "contacts_list_empty")
-								.default_text_style_800(styleSize: 16)
+							Text(
+								!text.isEmpty
+									? "list_filter_no_result_found" : "contacts_list_empty"
+							)
+							.default_text_style_800(styleSize: 16)
 							Spacer()
 							Spacer()
 						}
 					}
-						.padding(.all)
+					.padding(.all)
 				)
 			}
 		}
