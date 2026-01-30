@@ -61,7 +61,7 @@ class AccountLoginViewModel: ObservableObject {
 						core.loadConfigFromXml(xmlUri: assistantLinphone)
 					}
 				} else {
-					if let assistantLinphone = Bundle.main.path(forResource: "assistant_linphone_default_values", ofType: nil) {
+					if let assistantLinphone = Bundle.main.path(forResource: "assistant_third_party_default_values", ofType: nil) {
 						core.loadConfigFromXml(xmlUri: assistantLinphone)
 					}
 				}
