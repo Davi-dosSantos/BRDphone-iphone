@@ -20,28 +20,48 @@
 // swiftlint:disable line_length
 // swiftlint:disable type_body_length
 
-import Foundation
-import linphonesw
-import UserNotifications
-import os
-import CallKit
 import AVFoundation
+import CallKit
+import Foundation
 import SwiftUI
+import UserNotifications
+import linphonesw
+import os
 
 class CallAppData: NSObject {
 	var batteryWarningShown = false
 	var videoRequested = false /*set when user has requested for video*/
 	var isConference = false
-	
+
 }
 
 class TelecomManager: ObservableObject {
+	/// Inicialização órfã: chamada por push, sem SIP ainda
+	/// - Parameter displayName: Nome do chamador (opcional)
+	/// - Returns: UUID gerado para o CallKit
+	func handleOrphanPushCall(displayName: String? = nil) -> UUID {
+		let tempUUID = UUID()
+		self.currentCallKitUUID = tempUUID
+		// expectedPushUUID normalmente não está disponível aqui, será preenchido no Goal 3
+		print("[CALLFLOW] Push recebido. Gerado tempUUID: \(tempUUID)")
+		if let name = displayName {
+			print("[CALLFLOW] Nome do chamador: \(name)")
+		}
+		// Aqui normalmente chamaríamos o ProviderDelegate para reportar a chamada
+		// Exemplo: providerDelegate.reportIncomingCall(call: nil, uuid: tempUUID, handle: "", hasVideo: false, displayName: displayName ?? "")
+		return tempUUID
+	}
+	// Goal 2: Variáveis temporárias para correlação de chamada push
+	/// UUID esperado do push (do payload)
+	var expectedPushUUID: String?
+	/// UUID temporário gerado para o CallKit
+	var currentCallKitUUID: UUID?
 	static let shared = TelecomManager()
 	static var uuidReplacedCall: String?
-	
-	let providerDelegate: ProviderDelegate // to support callkit
-	let callController: CXCallController // to support callkit
-	
+
+	let providerDelegate: ProviderDelegate  // to support callkit
+	let callController: CXCallController  // to support callkit
+
 	@Published var callInProgress: Bool = false
 	@Published var callDisplayed: Bool = true
 	@Published var callStarted: Bool = false
@@ -56,30 +76,69 @@ class TelecomManager: ObservableObject {
 	@Published var meetingWaitingRoomSelected: Address?
 	@Published var meetingWaitingRoomName: String = ""
 	@Published var participantsInvited: Bool = false
-	
+
 	var actionToFulFill: CXCallAction?
 	var callkitAudioSessionActivated: Bool?
 	var nextCallIsTransfer: Bool = false
 	var speakerBeforePause: Bool = false
 	var endCallkit: Bool = false
 	var endCallKitReplacedCall: Bool = true
-	
+
+	// Goal 1: Mapa thread-safe CallKit UUID <-> SIP CallId
+	private let callMapQueue = DispatchQueue(
+		label: "com.brdsoft.brdphone.callMapQueue", attributes: .concurrent)
+	private var _callMap: [UUID: String] = [:]
+
+	/// Adiciona um vínculo UUID <-> CallId
+	func setCallMap(uuid: UUID, callId: String) {
+		callMapQueue.async(flags: .barrier) {
+			self._callMap[uuid] = callId
+			print("[CALLMAP] Vinculado UUID \(uuid) <-> CallId \(callId)")
+		}
+	}
+
+	/// Busca o CallId pelo UUID
+	func getCallId(for uuid: UUID) -> String? {
+		var result: String?
+		callMapQueue.sync {
+			result = self._callMap[uuid]
+			print("[CALLMAP] Consulta UUID \(uuid) -> CallId \(String(describing: result))")
+		}
+		return result
+	}
+
+	/// Remove o vínculo do mapa
+	func removeCallMap(uuid: UUID) {
+		callMapQueue.async(flags: .barrier) {
+			let removed = self._callMap.removeValue(forKey: uuid)
+			print("[CALLMAP] Removido UUID \(uuid) (CallId: \(String(describing: removed)))")
+		}
+	}
+
+	/// Limpa todo o mapa (debug)
+	func clearCallMap() {
+		callMapQueue.async(flags: .barrier) {
+			self._callMap.removeAll()
+			print("[CALLMAP] Mapa limpo!")
+		}
+	}
+
 	var backgroundContextCall: Call?
 	var backgroundContextCameraIsEnabled: Bool = false
-	
+
 	var referedFromCall: String?
 	var referedToCall: String?
 	var actionsToPerformOnceWhenCoreIsOn: [(() -> Void)] = []
-	
+
 	private init() {
 		providerDelegate = ProviderDelegate()
 		callController = CXCallController()
 	}
-	
+
 	func addAllToLocalConference(core: Core) {
 		// TODO
 	}
-	
+
 	static func getAppData(sCall: Call) -> CallAppData? {
 		if sCall.userData == nil {
 			return nil
@@ -96,24 +155,28 @@ class TelecomManager: ObservableObject {
 			sCall.userData = UnsafeMutableRawPointer(Unmanaged.passRetained(appData!).toOpaque())
 		}
 	}
-	
-	func startCallCallKit(core: Core, addr: Address?, isSas: Bool, isVideo: Bool, isConference: Bool = false) throws {
+
+	func startCallCallKit(
+		core: Core, addr: Address?, isSas: Bool, isVideo: Bool, isConference: Bool = false
+	) throws {
 		if addr == nil {
 			Log.info("Can not start a call with null address!")
 			return
 		}
-		
-		if TelecomManager.callKitEnabled(core: core) {// && !nextCallIsTransfer != true {
+
+		if TelecomManager.callKitEnabled(core: core) {  // && !nextCallIsTransfer != true {
 			let uuid = UUID()
 			let name = addr?.asStringUriOnly() ?? "Unknown"
 			let handle = CXHandle(type: .generic, value: addr?.asStringUriOnly() ?? "")
 			let startCallAction = CXStartCallAction(call: uuid, handle: handle)
 			let transaction = CXTransaction(action: startCallAction)
-			
-			let callInfo = CallInfo.newOutgoingCallInfo(addr: addr!, isSas: isSas, displayName: name, isVideo: isVideo, isConference: isConference)
+
+			let callInfo = CallInfo.newOutgoingCallInfo(
+				addr: addr!, isSas: isSas, displayName: name, isVideo: isVideo,
+				isConference: isConference)
 			providerDelegate.callInfos.updateValue(callInfo, forKey: uuid)
 			providerDelegate.uuids.updateValue(uuid, forKey: "")
-			
+
 			setHeldOtherCalls(core: core, exceptCallid: "")
 			requestTransaction(transaction, action: "startCall")
 			DispatchQueue.main.async {
@@ -122,55 +185,68 @@ class TelecomManager: ObservableObject {
 				}
 			}
 		} else {
-			try doCall(core: core, addr: addr!, isSas: isSas, isVideo: isVideo, isConference: isConference)
+			try doCall(
+				core: core, addr: addr!, isSas: isSas, isVideo: isVideo, isConference: isConference)
 		}
 	}
-	
+
 	func setHeldOtherCalls(core: Core, exceptCallid: String) {
 		for call in core.calls {
-			if call.callLog?.callId != exceptCallid && call.state != .Paused && call.state != .Pausing && call.state != .PausedByRemote {
+			if call.callLog?.callId != exceptCallid && call.state != .Paused
+				&& call.state != .Pausing && call.state != .PausedByRemote
+			{
 				setHeld(call: call, hold: true)
-			} else if call.callLog?.callId == exceptCallid && (call.state == .Paused || call.state == .Pausing || call.state == .PausedByRemote) {
+			} else if call.callLog?.callId == exceptCallid
+				&& (call.state == .Paused || call.state == .Pausing
+					|| call.state == .PausedByRemote)
+			{
 				setHeld(call: call, hold: true)
 			}
 		}
 	}
-	
+
 	func setHeld(call: Call, hold: Bool) {
-		
-#if targetEnvironment(simulator)
-		if hold {
-			try?call.pause()
-		} else {
-			try?call.resume()
-		}
-#else
-		let callid = call.callLog?.callId ?? ""
-		let uuid = providerDelegate.uuids["\(callid)"]
-		if uuid == nil {
-			Log.error("Can not find correspondant call to set held.")
-			return
-		}
-		let setHeldAction = CXSetHeldCallAction(call: uuid!, onHold: hold)
-		let transaction = CXTransaction(action: setHeldAction)
-		requestTransaction(transaction, action: "setHeld")
-#endif
+
+		#if targetEnvironment(simulator)
+			if hold {
+				try? call.pause()
+			} else {
+				try? call.resume()
+			}
+		#else
+			let callid = call.callLog?.callId ?? ""
+			let uuid = providerDelegate.uuids["\(callid)"]
+			if uuid == nil {
+				Log.error("Can not find correspondant call to set held.")
+				return
+			}
+			let setHeldAction = CXSetHeldCallAction(call: uuid!, onHold: hold)
+			let transaction = CXTransaction(action: setHeldAction)
+			requestTransaction(transaction, action: "setHeld")
+		#endif
 	}
-	
-	func startCall(core: Core, addr: String, isSas: Bool = false, isVideo: Bool, isConference: Bool = false) {
+
+	func startCall(
+		core: Core, addr: String, isSas: Bool = false, isVideo: Bool, isConference: Bool = false
+	) {
 		do {
 			let address = try Factory.Instance.createAddress(addr: addr)
-			try startCallCallKit(core: core, addr: address, isSas: isSas, isVideo: isVideo, isConference: isConference)
+			try startCallCallKit(
+				core: core, addr: address, isSas: isSas, isVideo: isVideo,
+				isConference: isConference)
 		} catch {
-			Log.error("[TelecomManager] unable to create address for a new outgoing call : \(addr) \(error) ")
+			Log.error(
+				"[TelecomManager] unable to create address for a new outgoing call : \(addr) \(error) "
+			)
 		}
 	}
-	
+
 	func doCallOrJoinConf(address: Address, isVideo: Bool = false, isConference: Bool = false) {
 		if address.asStringUriOnly().hasPrefix("sip:conference-focus@sip.linphone.org") {
 			do {
-				let meetingAddress = try Factory.Instance.createAddress(addr: address.asStringUriOnly())
-				
+				let meetingAddress = try Factory.Instance.createAddress(
+					addr: address.asStringUriOnly())
+
 				DispatchQueue.main.async {
 					withAnimation {
 						self.meetingWaitingRoomDisplayed = true
@@ -184,17 +260,21 @@ class TelecomManager: ObservableObject {
 			)
 		}
 	}
-	
+
 	func doCallWithCore(addr: Address, isVideo: Bool, isConference: Bool) {
 		CoreContext.shared.doOnCoreQueue { core in
 			do {
-				try self.startCallCallKit(core: core, addr: addr, isSas: false, isVideo: isVideo, isConference: isConference)
+				try self.startCallCallKit(
+					core: core, addr: addr, isSas: false, isVideo: isVideo,
+					isConference: isConference)
 			} catch {
-				Log.error("[TelecomManager] unable to create address for a new outgoing call : \(addr) \(error) ")
+				Log.error(
+					"[TelecomManager] unable to create address for a new outgoing call : \(addr) \(error) "
+				)
 			}
 		}
 	}
-	
+
 	private func makeRecordFilePath() -> String {
 		var filePath = "recording_"
 		let now = Date()
@@ -202,31 +282,33 @@ class TelecomManager: ObservableObject {
 		dateFormat.dateFormat = "E-d-MMM-yyyy-HH-mm-ss"
 		let date = dateFormat.string(from: now)
 		filePath = filePath.appending("\(date).mkv")
-		
+
 		let paths = NSSearchPathForDirectoriesInDomains(.cachesDirectory, .userDomainMask, true)
 		let writablePath = paths[0]
 		return writablePath.appending("/\(filePath)")
 	}
-	
-	func doCall(core: Core, addr: Address, isSas: Bool, isVideo: Bool, isConference: Bool = false) throws {
+
+	func doCall(core: Core, addr: Address, isSas: Bool, isVideo: Bool, isConference: Bool = false)
+		throws
+	{
 		// let displayName = FastAddressBook.displayName(for: addr.getCobject)
-		
+
 		let lcallParams = try core.createCallParams(call: nil)
 		/*
 		 if ConfigManager.instance().lpConfigBoolForKey(key: "edge_opt_preference") && AppManager.network() == .network_2g {
 		 Log.directLog(BCTBX_LOG_MESSAGE, text: "Enabling low bandwidth mode")
 		 lcallParams.lowBandwidthEnabled = true
 		 }
-		 
+		
 		 if (displayName != nil) {
 		 try addr.setDisplayname(newValue: displayName!)
 		 }
-		 
+		
 		 if(ConfigManager.instance().lpConfigBoolForKey(key: "override_domain_with_default_one")) {
 		 try addr.setDomain(newValue: ConfigManager.instance().lpConfigStringForKey(key: "domain", section: "assistant"))
 		 }
 		 */
-		
+
 		if nextCallIsTransfer {
 			let call = core.currentCall
 			try call?.transferTo(referTo: addr)
@@ -236,16 +318,18 @@ class TelecomManager: ObservableObject {
 			// let writablePath = AppManager.recordingFilePathFromCall(address: addr.username! )
 			// Log.directLog(BCTBX_LOG_DEBUG, text: "record file path: \(writablePath)")
 			// lcallParams.recordFile = writablePath
-			
+
 			lcallParams.recordFile = makeRecordFilePath()
-			
+
 			if isSas {
 				lcallParams.mediaEncryption = .ZRTP
 			}
-			
+
 			if isConference {
 				lcallParams.videoEnabled = true
-				lcallParams.videoDirection = isVideo && core.videoPreviewEnabled ? MediaDirection.SendRecv : MediaDirection.RecvOnly
+				lcallParams.videoDirection =
+					isVideo && core.videoPreviewEnabled
+					? MediaDirection.SendRecv : MediaDirection.RecvOnly
 				/*		if (ConferenceWaitingRoomViewModel.sharedModel.joinLayout.value! != .AudioOnly) {
 				 lcallParams.videoEnabled = true
 				 lcallParams.videoDirection = ConferenceWaitingRoomViewModel.sharedModel.isVideoEnabled.value == true ? .SendRecv : .RecvOnly
@@ -261,7 +345,7 @@ class TelecomManager: ObservableObject {
 					lcallParams.videoEnabled = false
 				}
 			}
-			
+
 			if let call = core.inviteAddressWithParams(addr: addr, params: lcallParams) {
 				// The LinphoneCallAppData object should be set on call creation with callback
 				// - (void)onCall:StateChanged:withMessage:. If not, we are in big trouble and expect it to crash
@@ -275,7 +359,7 @@ class TelecomManager: ObservableObject {
 					/* will be used later to notify user if video was not activated because of the linphone core*/
 				}
 			}
-			
+
 			DispatchQueue.main.async {
 				self.outgoingCallStarted = true
 				self.callStarted = true
@@ -288,7 +372,7 @@ class TelecomManager: ObservableObject {
 			}
 		}
 	}
-	
+
 	func acceptCall(core: Core, call: Call, hasVideo: Bool) {
 		do {
 			let callParams = try core.createCallParams(call: call)
@@ -301,36 +385,40 @@ class TelecomManager: ObservableObject {
 			 }
 			 callParams.lowBandwidthEnabled = low_bandwidth
 			 }*/
-			
+
 			// We set the record file name here because we can't do it after the call is started.
 			// let address = call.callLog?.fromAddress
 			// let writablePath = AppManager.recordingFilePathFromCall(address: address?.username ?? "")
 			// Log.directLog(BCTBX_LOG_MESSAGE, text: "Record file path: \(String(describing: writablePath))")
 			// callParams.recordFile = writablePath
-			
+
 			/*
 			 if let chatView : ChatConversationView = PhoneMainView.instance().VIEW(ChatConversationView.compositeViewDescription()), chatView.isVoiceRecording {
 			 Log.directLog(BCTBX_LOG_MESSAGE, text: "Voice recording in progress, stopping it befoce accepting the call.")
 			 chatView.stopVoiceRecording()
 			 }*/
-			
+
 			if call.callLog?.wasConference() == true {
 				// Prevent incoming group call to start in audio only layout
 				// Do the same as the conference waiting room
 				callParams.videoEnabled = true
-				callParams.videoDirection = core.videoActivationPolicy?.automaticallyInitiate == true ? .SendRecv : .RecvOnly
-				Log.info("[Context] Enabling video on call params to prevent audio-only layout when answering")
+				callParams.videoDirection =
+					core.videoActivationPolicy?.automaticallyInitiate == true
+					? .SendRecv : .RecvOnly
+				Log.info(
+					"[Context] Enabling video on call params to prevent audio-only layout when answering"
+				)
 			}
-			
+
 			try call.acceptWithParams(params: callParams)
-			
+
 			DispatchQueue.main.async {
 				self.callStarted = true
 				if self.callDisplayed {
 					self.callDisplayed = core.calls.count <= 1
 				}
 			}
-			
+
 			if core.calls.count > 1 {
 				DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
 					self.callDisplayed = true
@@ -340,7 +428,7 @@ class TelecomManager: ObservableObject {
 			Log.error("accept call failed \(error)")
 		}
 	}
-	
+
 	func terminateCall(call: Call) {
 		CoreContext.shared.doOnCoreQueue { _ in
 			do {
@@ -351,21 +439,27 @@ class TelecomManager: ObservableObject {
 			}
 		}
 	}
-	
-	func displayIncomingCall(call: Call?, handle: String, hasVideo: Bool, callId: String, displayName: String) {
-		Log.info("[TelecomManager] displayIncomingCall called - callId: \(callId), handle: \(handle), displayName: \(displayName)")
+
+	func displayIncomingCall(
+		call: Call?, handle: String, hasVideo: Bool, callId: String, displayName: String
+	) {
+		Log.info(
+			"[TelecomManager] displayIncomingCall called - callId: \(callId), handle: \(handle), displayName: \(displayName)"
+		)
 		let uuid = UUID()
 		let callInfo = CallInfo.newIncomingCallInfo(callId: callId)
-		
+
 		providerDelegate.callInfos.updateValue(callInfo, forKey: uuid)
 		providerDelegate.uuids.updateValue(uuid, forKey: callId)
 		Log.info("[TelecomManager] Calling reportIncomingCall with UUID: \(uuid)")
-		providerDelegate.reportIncomingCall(call: call, uuid: uuid, handle: handle, hasVideo: hasVideo, displayName: displayName)
+		providerDelegate.reportIncomingCall(
+			call: call, uuid: uuid, handle: handle, hasVideo: hasVideo, displayName: displayName)
 	}
-	
+
 	func incomingDisplayName(call: Call, completion: @escaping (String) -> Void) {
 		CoreContext.shared.doOnCoreQueue { _ in
-			ContactsManager.shared.getFriendWithAddressInCoreQueue(address: call.remoteAddress!) { friendResult in
+			ContactsManager.shared.getFriendWithAddressInCoreQueue(address: call.remoteAddress!) {
+				friendResult in
 				if call.remoteAddress != nil {
 					if call.callLog?.wasConference() != true {
 						if let addressFriend = friendResult {
@@ -388,31 +482,31 @@ class TelecomManager: ObservableObject {
 			}
 		}
 	}
-	
+
 	static func callKitEnabled(core: Core) -> Bool {
-#if !targetEnvironment(simulator)
-		let enabled = core.callkitEnabled
-		Log.info("[TelecomManager] callKitEnabled (device): \(enabled)")
-		return enabled
-#else
-		Log.info("[TelecomManager] callKitEnabled (simulator): returning false")
-		return false
-#endif
+		#if !targetEnvironment(simulator)
+			let enabled = core.callkitEnabled
+			Log.info("[TelecomManager] callKitEnabled (device): \(enabled)")
+			return enabled
+		#else
+			Log.info("[TelecomManager] callKitEnabled (simulator): returning false")
+			return false
+		#endif
 	}
-	
+
 	// Versão simplificada sem Core (para usar em push handler antes de Core estar pronto)
 	static func callKitEnabled() -> Bool {
-#if !targetEnvironment(simulator)
-		// Em produção, CallKit deve estar sempre habilitado
-		// Se precisar verificar preferência do usuário, adicione lógica aqui
-		Log.info("[TelecomManager] callKitEnabled (static check - device): true")
-		return true
-#else
-		Log.info("[TelecomManager] callKitEnabled (static check - simulator): false")
-		return false
-#endif
+		#if !targetEnvironment(simulator)
+			// Em produção, CallKit deve estar sempre habilitado
+			// Se precisar verificar preferência do usuário, adicione lógica aqui
+			Log.info("[TelecomManager] callKitEnabled (static check - device): true")
+			return true
+		#else
+			Log.info("[TelecomManager] callKitEnabled (static check - simulator): false")
+			return false
+		#endif
 	}
-	
+
 	func requestTransaction(_ transaction: CXTransaction, action: String) {
 		callController.request(transaction) { error in
 			if let error = error {
@@ -422,8 +516,10 @@ class TelecomManager: ObservableObject {
 			}
 		}
 	}
-	
-	func onAccountRegistrationStateChanged(core: Core, account: Account, state: RegistrationState, message: String) {
+
+	func onAccountRegistrationStateChanged(
+		core: Core, account: Account, state: RegistrationState, message: String
+	) {
 		if core.accountList.count == 1 && (state == .Failed || state == .Cleared) {
 			// terminate callkit immediately when registration failed or cleared, supporting single account configuration
 			for call in providerDelegate.uuids {
@@ -442,17 +538,49 @@ class TelecomManager: ObservableObject {
 			endCallkit = false
 		}
 	}
-	
+
 	func updateRemoteConfVideo(remConfVideoEnabled: Bool) {
 		if self.remoteConfVideo != remConfVideoEnabled {
 			DispatchQueue.main.async {
 				self.remoteConfVideo.toggle()
-				Log.info("[Call] Remote video is \(remConfVideoEnabled ? "activated" : "not activated")")
+				Log.info(
+					"[Call] Remote video is \(remConfVideoEnabled ? "activated" : "not activated")")
 			}
 		}
 	}
-	
+
 	func onCallStateChanged(core: Core, call: Call, state cstate: Call.State, message: String) {
+		// Goal 3: Correlação SIP chegou (IncomingReceived)
+		if cstate == .IncomingReceived {
+			// Tenta ler o header customizado do SIP
+			var headerUUID: String? = nil
+            if let pushHeader = call.remoteParams?.getCustomHeader(headerName: "X-PUSH-CALLID") {
+				headerUUID = pushHeader
+				print("[CALLFLOW] Header X-PUSH-CALLID encontrado: \(headerUUID!)")
+			} else {
+				print("[CALLFLOW] Header X-PUSH-CALLID não encontrado no SIP")
+			}
+			// Validação: só correlaciona se o headerUUID for igual ao esperado
+			if let expected = self.expectedPushUUID, let header = headerUUID, expected == header {
+				print("[CALLFLOW] headerUUID == expectedPushUUID (\(header)). Correlacionando...")
+				if let tempUUID = self.currentCallKitUUID {
+					// Preencher o mapa UUID <-> CallId
+					self.setCallMap(uuid: tempUUID, callId: call.callLog?.callId ?? "")
+					print(
+						"[CALLFLOW] Mapa preenchido: \(tempUUID) <-> \(call.callLog?.callId ?? "")")
+					// Limpar variáveis temporárias
+					self.expectedPushUUID = nil
+					self.currentCallKitUUID = nil
+					print("[CALLFLOW] Variáveis temporárias limpas.")
+				} else {
+					print("[CALLFLOW] currentCallKitUUID está nil, não foi possível correlacionar.")
+				}
+			} else {
+				print(
+					"[CALLFLOW] headerUUID != expectedPushUUID ou algum está nil. Não correlaciona."
+				)
+			}
+		}
 		let callLog = call.callLog
 		let callId = callLog?.callId ?? ""
 		if !callInProgress && participantsInvited {
@@ -462,11 +590,13 @@ class TelecomManager: ObservableObject {
 				let handle = CXHandle(type: .generic, value: remoteAddress.asStringUriOnly())
 				let startCallAction = CXStartCallAction(call: uuid, handle: handle)
 				let transaction = CXTransaction(action: startCallAction)
-				
-				let callInfo = CallInfo.newOutgoingCallInfo(addr: remoteAddress, isSas: false, displayName: name, isVideo: true, isConference: true)
+
+				let callInfo = CallInfo.newOutgoingCallInfo(
+					addr: remoteAddress, isSas: false, displayName: name, isVideo: true,
+					isConference: true)
 				providerDelegate.callInfos.updateValue(callInfo, forKey: uuid)
 				providerDelegate.uuids.updateValue(uuid, forKey: callId)
-				
+
 				setHeldOtherCalls(core: core, exceptCallid: callId)
 				requestTransaction(transaction, action: "startCall")
 				DispatchQueue.main.async {
@@ -477,47 +607,64 @@ class TelecomManager: ObservableObject {
 				}
 			}
 		}
-		
+
 		if cstate == .PushIncomingReceived {
 			Log.info("PushIncomingReceived in core delegate, display callkit call")
-			TelecomManager.shared.displayIncomingCall(call: call, handle: "Calling", hasVideo: false, callId: callId, displayName: "Calling")
+			TelecomManager.shared.displayIncomingCall(
+				call: call, handle: "Calling", hasVideo: false, callId: callId,
+				displayName: "Calling")
 		} else {
 			// let oldRemoteConfVideo = self.remoteConfVideo
-			
+
 			if call.conference != nil {
 				if call.conference!.activeSpeakerParticipantDevice != nil {
-					let direction = call.conference?.activeSpeakerParticipantDevice!.getStreamCapability(streamType: StreamType.Video)
-					updateRemoteConfVideo(remConfVideoEnabled: direction == .SendRecv || direction == .SendOnly)
-				} else if call.conference!.participantList.first != nil && call.conference!.participantDeviceList.first != nil
-							&& call.conference!.participantList.first?.address != nil
-							&& call.conference!.participantList.first!.address!.clone()!.equal(address2: (call.conference!.me?.address)!) {
-					let direction = call.conference!.participantDeviceList.first!.getStreamCapability(streamType: StreamType.Video)
-					updateRemoteConfVideo(remConfVideoEnabled: direction == .SendRecv || direction == .SendOnly)
-				} else if call.conference!.participantList.last != nil && call.conference!.participantDeviceList.last != nil
-							&& call.conference!.participantList.last?.address != nil {
-					let direction = call.conference!.participantDeviceList.last!.getStreamCapability(streamType: StreamType.Video)
-					updateRemoteConfVideo(remConfVideoEnabled: direction == .SendRecv || direction == .SendOnly)
+					let direction = call.conference?.activeSpeakerParticipantDevice!
+						.getStreamCapability(streamType: StreamType.Video)
+					updateRemoteConfVideo(
+						remConfVideoEnabled: direction == .SendRecv || direction == .SendOnly)
+				} else if call.conference!.participantList.first != nil
+					&& call.conference!.participantDeviceList.first != nil
+					&& call.conference!.participantList.first?.address != nil
+					&& call.conference!.participantList.first!.address!.clone()!.equal(
+						address2: (call.conference!.me?.address)!)
+				{
+					let direction = call.conference!.participantDeviceList.first!
+						.getStreamCapability(streamType: StreamType.Video)
+					updateRemoteConfVideo(
+						remConfVideoEnabled: direction == .SendRecv || direction == .SendOnly)
+				} else if call.conference!.participantList.last != nil
+					&& call.conference!.participantDeviceList.last != nil
+					&& call.conference!.participantList.last?.address != nil
+				{
+					let direction = call.conference!.participantDeviceList.last!
+						.getStreamCapability(streamType: StreamType.Video)
+					updateRemoteConfVideo(
+						remConfVideoEnabled: direction == .SendRecv || direction == .SendOnly)
 				} else {
 					updateRemoteConfVideo(remConfVideoEnabled: false)
 				}
 			} else {
 				var remConfVideoEnabled = false
 				if call.currentParams != nil {
-					remConfVideoEnabled = call.currentParams!.videoEnabled && call.currentParams!.videoDirection == .SendRecv || call.currentParams!.videoDirection == .RecvOnly
+					remConfVideoEnabled =
+						call.currentParams!.videoEnabled
+						&& call.currentParams!.videoDirection == .SendRecv
+						|| call.currentParams!.videoDirection == .RecvOnly
 				}
 				updateRemoteConfVideo(remConfVideoEnabled: remConfVideoEnabled)
 			}
-						
+
 			if self.remoteConfVideo {
 				Log.info("[Call] Remote video is activated")
 			}
-			
+
 			let isRecordingByRemoteTmp = call.remoteParams?.isRecording ?? false
-			
+
 			if isRecordingByRemoteTmp && ToastViewModel.shared.toastMessage.isEmpty {
-				
+
 				var displayName = ""
-				let friend = ContactsManager.shared.getFriendWithAddress(address: call.remoteAddress!)
+				let friend = ContactsManager.shared.getFriendWithAddress(
+					address: call.remoteAddress!)
 				if friend != nil && friend!.address != nil && friend!.address!.displayName != nil {
 					displayName = friend!.address!.displayName!
 				} else {
@@ -529,17 +676,19 @@ class TelecomManager: ObservableObject {
 						displayName = String(call.remoteAddress!.asStringUriOnly().dropFirst(4))
 					}
 				}
-				
+
 				DispatchQueue.main.async {
 					self.isRecordingByRemote = isRecordingByRemoteTmp
 					ToastViewModel.shared.toastMessage = "\(displayName) is recording"
 					ToastViewModel.shared.displayToast = true
 				}
-				
+
 				Log.info("[Call] Call is recording by \(call.remoteAddress!.asStringUriOnly())")
 			}
-			
-			if !isRecordingByRemoteTmp && ToastViewModel.shared.toastMessage.contains("is recording") {
+
+			if !isRecordingByRemoteTmp
+				&& ToastViewModel.shared.toastMessage.contains("is recording")
+			{
 				DispatchQueue.main.async {
 					self.isRecordingByRemote = isRecordingByRemoteTmp
 					ToastViewModel.shared.toastMessage = ""
@@ -547,7 +696,7 @@ class TelecomManager: ObservableObject {
 				}
 				Log.info("[Call] Recording is stopped by \(call.remoteAddress!.asStringUriOnly())")
 			}
-			
+
 			if cstate == Call.State.PausedByRemote {
 				DispatchQueue.main.async {
 					self.isPausedByRemote = true
@@ -557,7 +706,7 @@ class TelecomManager: ObservableObject {
 					self.isPausedByRemote = false
 				}
 			}
-			
+
 			if cstate == Call.State.Connected {
 				DispatchQueue.main.async {
 					self.callConnected = true
@@ -565,124 +714,149 @@ class TelecomManager: ObservableObject {
 					self.meetingWaitingRoomDisplayed = false
 				}
 			}
-			
+
 			if call.userData == nil {
 				let appData = CallAppData()
 				TelecomManager.setAppData(sCall: call, appData: appData)
 			}
-			
+
 			switch cstate {
 			case .IncomingReceived:
-				Log.info("[TelecomManager] Call state changed to IncomingReceived, callId: \(callId)")
+				Log.info(
+					"[TelecomManager] Call state changed to IncomingReceived, callId: \(callId)")
 				let addr = call.remoteAddress
 				incomingDisplayName(call: call) { displayNameResult in
-					Log.info("[TelecomManager] Got display name: \(displayNameResult) for callId: \(callId)")
+					Log.info(
+						"[TelecomManager] Got display name: \(displayNameResult) for callId: \(callId)"
+					)
 					let displayName = displayNameResult
-	#if targetEnvironment(simulator)
-					Log.info("[TelecomManager] Running in SIMULATOR - setting callInProgress and callDisplayed to true")
-					DispatchQueue.main.async {
-						self.outgoingCallStarted = false
-						self.callStarted = false
-						if self.callInProgress == false {
-							withAnimation {
-								self.callInProgress = true
-								self.callDisplayed = true
+					#if targetEnvironment(simulator)
+						Log.info(
+							"[TelecomManager] Running in SIMULATOR - setting callInProgress and callDisplayed to true"
+						)
+						DispatchQueue.main.async {
+							self.outgoingCallStarted = false
+							self.callStarted = false
+							if self.callInProgress == false {
+								withAnimation {
+									self.callInProgress = true
+									self.callDisplayed = true
+								}
 							}
+							Log.info(
+								"[TelecomManager] Simulator: callInProgress=\(self.callInProgress), callDisplayed=\(self.callDisplayed)"
+							)
 						}
-						Log.info("[TelecomManager] Simulator: callInProgress=\(self.callInProgress), callDisplayed=\(self.callDisplayed)")
-					}
-	#endif
+					#endif
 					if TelecomManager.callKitEnabled(core: core) {
 						Log.info("[TelecomManager] CallKit is enabled, processing incoming call")
 						let uuid = self.providerDelegate.uuids["\(callId)"]
 						TelecomManager.uuidReplacedCall = callId
-						
+
 						if uuid != nil {
 							Log.info("[TelecomManager] UUID already exists, updating call")
 							// Tha app is now registered, updated the call already existed.
-							self.providerDelegate.updateCall(uuid: uuid!, handle: addr!.asStringUriOnly(), hasVideo: self.remoteConfVideo, displayName: displayName)
+							self.providerDelegate.updateCall(
+								uuid: uuid!, handle: addr!.asStringUriOnly(),
+								hasVideo: self.remoteConfVideo, displayName: displayName)
 						} else {
 							Log.info("[TelecomManager] New UUID, displaying incoming call")
 							let videoEnabled = call.remoteParams?.videoEnabled ?? false
 							let isConference = call.callLog?.wasConference() ?? false
-							let videoDir = call.remoteParams?.videoDirection != MediaDirection.Inactive
-							self.displayIncomingCall(call: call, handle: addr!.asStringUriOnly(), hasVideo: videoEnabled && videoDir && !isConference, callId: callId, displayName: displayName)
+							let videoDir =
+								call.remoteParams?.videoDirection != MediaDirection.Inactive
+							self.displayIncomingCall(
+								call: call, handle: addr!.asStringUriOnly(),
+								hasVideo: videoEnabled && videoDir && !isConference, callId: callId,
+								displayName: displayName)
 						}
 					} else {
-						Log.info("[TelecomManager] CallKit is NOT enabled - checking if in simulator...")
-#if targetEnvironment(simulator)
-						Log.info("[TelecomManager] In simulator, call UI should already be displayed via callInProgress/callDisplayed flags")
-#else
-						Log.error("[TelecomManager] CallKit NOT enabled on DEVICE! Check core.callkitEnabled setting")
-#endif
+						Log.info(
+							"[TelecomManager] CallKit is NOT enabled - checking if in simulator...")
+						#if targetEnvironment(simulator)
+							Log.info(
+								"[TelecomManager] In simulator, call UI should already be displayed via callInProgress/callDisplayed flags"
+							)
+						#else
+							Log.error(
+								"[TelecomManager] CallKit NOT enabled on DEVICE! Check core.callkitEnabled setting"
+							)
+						#endif
 					}
 				}
 			case .StreamsRunning:
 				if TelecomManager.callKitEnabled(core: core) {
-					
+
 					DispatchQueue.main.async {
 						self.outgoingCallStarted = false
 					}
-					
+
 					let uuid = providerDelegate.uuids["\(callId)"]
 					if uuid != nil {
 						let callInfo = providerDelegate.callInfos[uuid!]
 						if callInfo != nil && callInfo!.isOutgoing && !callInfo!.connected {
-							Log.info("CallKit: outgoing call connected with uuid \(uuid!) and callId \(callId)")
+							Log.info(
+								"CallKit: outgoing call connected with uuid \(uuid!) and callId \(callId)"
+							)
 							providerDelegate.reportOutgoingCallConnected(uuid: uuid!)
 							callInfo!.connected = true
 							providerDelegate.callInfos.updateValue(callInfo!, forKey: uuid!)
 						}
 					}
 				}
-				
+
 				actionToFulFill?.fulfill()
 				actionToFulFill = nil
 			case .Paused:
 				actionToFulFill?.fulfill()
 				actionToFulFill = nil
 			case .OutgoingInit,
-					.OutgoingProgress,
-					.OutgoingRinging,
-					.OutgoingEarlyMedia:
-				
+				.OutgoingProgress,
+				.OutgoingRinging,
+				.OutgoingEarlyMedia:
+
 				if TelecomManager.callKitEnabled(core: core) {
 					let uuid = providerDelegate.uuids[""]
-					if  uuid != nil {
+					if uuid != nil {
 						let callInfo = providerDelegate.callInfos[uuid!]
 						callInfo!.callId = callId
 						providerDelegate.callInfos.updateValue(callInfo!, forKey: uuid!)
 						providerDelegate.uuids.removeValue(forKey: "")
 						providerDelegate.uuids.updateValue(uuid!, forKey: callId)
-						
-						Log.info("CallKit: outgoing call started connecting with uuid \(uuid!) and callId \(callId)")
+
+						Log.info(
+							"CallKit: outgoing call started connecting with uuid \(uuid!) and callId \(callId)"
+						)
 						providerDelegate.reportOutgoingCallStartedConnecting(uuid: uuid!)
 					} else {
 						referedToCall = callId
 					}
 				}
 			case .End,
-					.Error:
-				
+				.Error:
+
 				UIDevice.current.isProximityMonitoringEnabled = false
 				if core.callsNb == 0 {
 					core.outputAudioDevice = core.defaultOutputAudioDevice
 				}
-				
+
 				// if core.callsNb == 0 {
 				self.incomingDisplayName(call: call) { displayNameResult in
 					var displayName = "Unknown"
 					if call.dir == .Incoming {
 						displayName = displayNameResult
-					} else { // if let addr = call.remoteAddress, let contactName = FastAddressBook.displayName(for: addr.getCobject) {
+					} else {  // if let addr = call.remoteAddress, let contactName = FastAddressBook.displayName(for: addr.getCobject) {
 						displayName = "TODOContactName"
 					}
 					DispatchQueue.main.async {
 						if core.callsNb == 0 {
 							do {
-								try core.setVideodevice(newValue: "AV Capture: com.apple.avfoundation.avcapturedevice.built-in_video:1")
+								try core.setVideodevice(
+									newValue:
+										"AV Capture: com.apple.avfoundation.avcapturedevice.built-in_video:1"
+								)
 							} catch _ {
-								
+
 							}
 							withAnimation {
 								self.outgoingCallStarted = false
@@ -694,7 +868,7 @@ class TelecomManager: ObservableObject {
 						} else {
 							if core.calls.last != nil {
 								self.setHeld(call: core.calls.last!, hold: false)
-								
+
 								DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
 									self.remainingCall = true
 									DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
@@ -703,31 +877,41 @@ class TelecomManager: ObservableObject {
 								}
 							}
 						}
-						
-						if UIApplication.shared.applicationState != .active && (callLog == nil || callLog?.status == .Missed || callLog?.status == .Aborted || callLog?.status == .EarlyAborted) {
+
+						if UIApplication.shared.applicationState != .active
+							&& (callLog == nil || callLog?.status == .Missed
+								|| callLog?.status == .Aborted || callLog?.status == .EarlyAborted)
+						{
 							// Configure the notification's payload.
 							let content = UNMutableNotificationContent()
-							content.title = NSString.localizedUserNotificationString(forKey: NSLocalizedString("notification_missed_call_title", comment: ""), arguments: nil)
-							content.body = NSString.localizedUserNotificationString(forKey: displayName, arguments: nil)
-							
+							content.title = NSString.localizedUserNotificationString(
+								forKey: NSLocalizedString(
+									"notification_missed_call_title", comment: ""), arguments: nil)
+							content.body = NSString.localizedUserNotificationString(
+								forKey: displayName, arguments: nil)
+
 							// Deliver the notification.
-							let request = UNNotificationRequest(identifier: "call_request", content: content, trigger: nil) // Schedule the notification.
+							let request = UNNotificationRequest(
+								identifier: "call_request", content: content, trigger: nil)  // Schedule the notification.
 							let center = UNUserNotificationCenter.current()
 							center.add(request) { (error: Error?) in
 								if error != nil {
-									Log.info("Error while adding notification request : \(error!.localizedDescription)")
+									Log.info(
+										"Error while adding notification request : \(error!.localizedDescription)"
+									)
 								}
 							}
 						}
 					}
 				}
 				// }
-				
+
 				if TelecomManager.callKitEnabled(core: core) {
 					var uuid = providerDelegate.uuids["\(callId)"]
 					if callId == referedToCall {
 						// refered call ended before connecting
-						Log.info("Callkit: end refered to call: \(String(describing: referedToCall))")
+						Log.info(
+							"Callkit: end refered to call: \(String(describing: referedToCall))")
 						referedFromCall = nil
 						referedToCall = nil
 					}
@@ -737,7 +921,9 @@ class TelecomManager: ObservableObject {
 					}
 					if uuid != nil {
 						if callId == referedFromCall {
-							Log.info("Callkit: end refered from call: \(String(describing: referedFromCall))")
+							Log.info(
+								"Callkit: end refered from call: \(String(describing: referedFromCall))"
+							)
 							referedFromCall = nil
 							let callInfo = providerDelegate.callInfos[uuid!]
 							callInfo!.callId = referedToCall ?? ""
@@ -753,7 +939,7 @@ class TelecomManager: ObservableObject {
 						} else {
 							endCallKitReplacedCall = true
 						}
-						
+
 					}
 				}
 			case .Released:
@@ -765,11 +951,13 @@ class TelecomManager: ObservableObject {
 			}
 		}
 		// post Notification kLinphoneCallUpdate
-		NotificationCenter.default.post(name: Notification.Name("LinphoneCallUpdate"), object: self, userInfo: [
-			AnyHashable("call"): NSValue.init(pointer: UnsafeRawPointer(call.getCobject)),
-			AnyHashable("state"): NSNumber(value: cstate.rawValue),
-			AnyHashable("message"): message
-		])
+		NotificationCenter.default.post(
+			name: Notification.Name("LinphoneCallUpdate"), object: self,
+			userInfo: [
+				AnyHashable("call"): NSValue.init(pointer: UnsafeRawPointer(call.getCobject)),
+				AnyHashable("state"): NSNumber(value: cstate.rawValue),
+				AnyHashable("message"): message,
+			])
 	}
 }
 
