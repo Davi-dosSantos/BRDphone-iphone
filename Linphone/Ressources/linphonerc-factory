@@ -48,9 +48,6 @@ record_aware=1
 url=https://subscribe.linphone.org/api/
 backend=1
 
-[lime]
-lime_update_threshold=86400
-
 [alerts]
 alerts_enabled=1
 

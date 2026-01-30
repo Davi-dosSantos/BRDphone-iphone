@@ -142,7 +142,7 @@ class RegisterViewModel: ObservableObject {
 					if account != nil {
 						Log.info( "\(RegisterViewModel.TAG) Account \(account?.params?.identityAddress?.asStringUriOnly() ?? "NIL") has been created & activated, setting it as default")
 						
-						if let assistantLinphone = Bundle.main.path(forResource: "assistant_linphone_default_values", ofType: nil) {
+						if let assistantLinphone = Bundle.main.path(forResource: "assistant_third_party_default_values", ofType: nil) {
 							core.loadConfigFromXml(xmlUri: assistantLinphone)
 						}
 						
