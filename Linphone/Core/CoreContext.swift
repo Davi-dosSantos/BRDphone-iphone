@@ -60,10 +60,10 @@ class CoreContext: ObservableObject {
 	var digestAuthInfoPendingPasswordUpdate: AuthInfo?
 
 	private init() {
+		Log.info("[DEBUG] CoreContext init chamado - singleton inicializado")
 		do {
 			try initialiseCore()
 		} catch {
-
 		}
 	}
 
@@ -498,6 +498,8 @@ class CoreContext: ObservableObject {
 				})
 
 			self.mCore.addDelegate(delegate: self.mCoreDelegate)
+			self.mCore.addDelegate(delegate: self)
+			Log.info("[DEBUG] CoreContext registrado como CoreDelegate no mCore")
 
 			self.mCore.autoIterateEnabled = true
 
@@ -601,3 +603,58 @@ class CoreContext: ObservableObject {
 // swiftlint:enable line_length
 // swiftlint:enable cyclomatic_complexity
 // swiftlint:enable identifier_name
+
+// MARK: - CoreDelegate Push Notification
+extension CoreContext: CoreDelegate {
+	func onPushNotificationReceived(core: Core, payload: String) {
+		Log.info("[DEBUG] onPushNotificationReceived chamado no CoreContext!")
+		Log.info("[Push] Payload recebido (Raw): \(payload)")
+
+		var extractedUUID: String?
+
+		// TENTATIVA VIA JSON (Caso o formato mude no futuro)
+		if let data = payload.data(using: .utf8),
+			let json = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any]
+		{
+			if let uuid = json["call_uuid"] as? String {
+				extractedUUID = uuid
+			}
+		}
+
+		// TENTATIVA VIA REGEX (Para o formato atual do log: "call_uuid" = "VALOR";)
+		if extractedUUID == nil {
+			let pattern = "\"call_uuid\"\\s*=\\s*\"([^\"]+)\""
+			if let regex = try? NSRegularExpression(pattern: pattern, options: []) {
+				let nsString = payload as NSString
+				let results = regex.matches(
+					in: payload, options: [], range: NSRange(location: 0, length: nsString.length))
+				if let match = results.first, match.numberOfRanges > 1 {
+					extractedUUID = nsString.substring(with: match.range(at: 1))
+				}
+			}
+		}
+
+		// TENTATIVA DE FALLBACK (Caso venha sem aspas: call_uuid = VALOR;)
+		if extractedUUID == nil {
+			let patternSimple = "call_uuid\\s*=\\s*([^;\\s]+)"
+			if let regex = try? NSRegularExpression(pattern: patternSimple, options: []) {
+				let nsString = payload as NSString
+				let results = regex.matches(
+					in: payload, options: [], range: NSRange(location: 0, length: nsString.length))
+				if let match = results.first, match.numberOfRanges > 1 {
+					extractedUUID = nsString.substring(with: match.range(at: 1))
+				}
+			}
+		}
+
+		// 4. SALVAR E VALIDAR
+		if let uuid = extractedUUID {
+			Log.info("[Push] SUCESSO: UUID extraído do payload: \(uuid)")
+			TelecomManager.shared.pushUUID = uuid
+		} else {
+			Log.error(
+				"[Push] ERRO CRÍTICO: Não foi possível extrair call_uuid do payload via JSON nem Regex."
+			)
+		}
+	}
+}

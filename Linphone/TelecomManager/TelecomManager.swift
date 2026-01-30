@@ -36,26 +36,21 @@ class CallAppData: NSObject {
 }
 
 class TelecomManager: ObservableObject {
-	/// Inicialização órfã: chamada por push, sem SIP ainda
-	/// - Parameter displayName: Nome do chamador (opcional)
-	/// - Returns: UUID gerado para o CallKit
-	func handleOrphanPushCall(displayName: String? = nil) -> UUID {
-		let tempUUID = UUID()
-		self.currentCallKitUUID = tempUUID
-		// expectedPushUUID normalmente não está disponível aqui, será preenchido no Goal 3
-		print("[CALLFLOW] Push recebido. Gerado tempUUID: \(tempUUID)")
-		if let name = displayName {
-			print("[CALLFLOW] Nome do chamador: \(name)")
+	// Flag para evitar chamada duplicada de displayIncomingCall
+	private var displayedIncomingCallUUID: UUID?
+
+	//Variável única para correlação de chamada push (ela que armazena o call_uuid recebido no push)
+	var pushUUID: String?
+	/// UUID temporário gerado para o CallKit (sempre atualizado na chegada do push)
+	var currentCallKitUUID: UUID? {
+		didSet {
+			if let uuid = currentCallKitUUID {
+				print("[CALLFLOW][DEBUG] currentCallKitUUID atualizado: \(uuid)")
+			} else {
+				print("[CALLFLOW][DEBUG] currentCallKitUUID limpo (nil)")
+			}
 		}
-		// Aqui normalmente chamaríamos o ProviderDelegate para reportar a chamada
-		// Exemplo: providerDelegate.reportIncomingCall(call: nil, uuid: tempUUID, handle: "", hasVideo: false, displayName: displayName ?? "")
-		return tempUUID
 	}
-	// Goal 2: Variáveis temporárias para correlação de chamada push
-	/// UUID esperado do push (do payload)
-	var expectedPushUUID: String?
-	/// UUID temporário gerado para o CallKit
-	var currentCallKitUUID: UUID?
 	static let shared = TelecomManager()
 	static var uuidReplacedCall: String?
 
@@ -446,9 +441,33 @@ class TelecomManager: ObservableObject {
 		Log.info(
 			"[TelecomManager] displayIncomingCall called - callId: \(callId), handle: \(handle), displayName: \(displayName)"
 		)
-		let uuid = UUID()
-		let callInfo = CallInfo.newIncomingCallInfo(callId: callId)
+		let uuid: UUID
+		if let existingUUID = self.currentCallKitUUID {
+			uuid = existingUUID
+			Log.info("[CALLFLOW][DEBUG] Reutilizando currentCallKitUUID existente: \(uuid)")
+		} else if callId.isEmpty {
+			uuid = UUID()
+			self.currentCallKitUUID = uuid
+			Log.info("[CALLFLOW][DEBUG] Gerando novo currentCallKitUUID (push): \(uuid)")
+		} else {
+			// callId já existe, mas currentCallKitUUID está nil (caso inesperado)
+			Log.error(
+				"[CALLFLOW][ERRO] currentCallKitUUID está nil mas callId já existe! Reutilizando UUID para não quebrar correlação."
+			)
+			uuid = UUID()
+			self.currentCallKitUUID = uuid
+		}
 
+		// Evita chamada duplicada para o mesmo UUID
+		if let displayedUUID = displayedIncomingCallUUID, displayedUUID == uuid {
+			Log.info(
+				"[CALLFLOW][DEBUG] displayIncomingCall já chamado para UUID: \(uuid), ignorando chamada duplicada."
+			)
+			return
+		}
+		displayedIncomingCallUUID = uuid
+
+		let callInfo = CallInfo.newIncomingCallInfo(callId: callId)
 		providerDelegate.callInfos.updateValue(callInfo, forKey: uuid)
 		providerDelegate.uuids.updateValue(uuid, forKey: callId)
 		Log.info("[TelecomManager] Calling reportIncomingCall with UUID: \(uuid)")
@@ -554,31 +573,32 @@ class TelecomManager: ObservableObject {
 		if cstate == .IncomingReceived {
 			// Tenta ler o header customizado do SIP
 			var headerUUID: String? = nil
-            if let pushHeader = call.remoteParams?.getCustomHeader(headerName: "X-PUSH-CALLID") {
+			if let pushHeader = call.remoteParams?.getCustomHeader(headerName: "X-PUSH-CALLID") {
 				headerUUID = pushHeader
 				print("[CALLFLOW] Header X-PUSH-CALLID encontrado: \(headerUUID!)")
 			} else {
 				print("[CALLFLOW] Header X-PUSH-CALLID não encontrado no SIP")
 			}
-			// Validação: só correlaciona se o headerUUID for igual ao esperado
-			if let expected = self.expectedPushUUID, let header = headerUUID, expected == header {
-				print("[CALLFLOW] headerUUID == expectedPushUUID (\(header)). Correlacionando...")
+			// Validação: só correlaciona se o headerUUID for igual ao pushUUID
+			if let expected = self.pushUUID, let header = headerUUID, expected == header {
+				print("[CALLFLOW] Header call_uuid encontrado: \(header)")
+				print("[CALLFLOW] push == sip. Correlacionando...")
 				if let tempUUID = self.currentCallKitUUID {
 					// Preencher o mapa UUID <-> CallId
 					self.setCallMap(uuid: tempUUID, callId: call.callLog?.callId ?? "")
 					print(
 						"[CALLFLOW] Mapa preenchido: \(tempUUID) <-> \(call.callLog?.callId ?? "")")
-					// Limpar variáveis temporárias
-					self.expectedPushUUID = nil
-					self.currentCallKitUUID = nil
-					print("[CALLFLOW] Variáveis temporárias limpas.")
 				} else {
-					print("[CALLFLOW] currentCallKitUUID está nil, não foi possível correlacionar.")
+					print(
+						"[CALLFLOW][ERRO] currentCallKitUUID está nil! Não foi possível correlacionar. Isso indica que o UUID gerado no push não foi salvo corretamente."
+					)
 				}
-			} else {
+				// NÃO limpar variáveis temporárias aqui! Só após o ciclo da chamada.
 				print(
-					"[CALLFLOW] headerUUID != expectedPushUUID ou algum está nil. Não correlaciona."
+					"[CALLFLOW] Variáveis temporárias NÃO limpas aqui para manter correlação até o fim da chamada."
 				)
+			} else {
+				print("[CALLFLOW] headerUUID != pushUUID ou algum está nil. Não correlaciona.")
 			}
 		}
 		let callLog = call.callLog
@@ -840,7 +860,11 @@ class TelecomManager: ObservableObject {
 					core.outputAudioDevice = core.defaultOutputAudioDevice
 				}
 
-				// if core.callsNb == 0 {
+				// Limpa variáveis temporárias APÓS o ciclo da chamada
+				self.pushUUID = nil
+				self.currentCallKitUUID = nil
+				self.displayedIncomingCallUUID = nil
+				print("[CALLFLOW] Variáveis temporárias limpas (fim da chamada).")
 				self.incomingDisplayName(call: call) { displayNameResult in
 					var displayName = "Unknown"
 					if call.dir == .Incoming {
